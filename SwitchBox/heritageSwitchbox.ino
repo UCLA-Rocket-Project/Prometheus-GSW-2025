@@ -91,7 +91,48 @@ void loop() {
     rs485Serial.println(message);
     Serial.println("Sent:");
     Serial.println(message);
+    Serial.println();
+
+    debugPrint(message, 10);
+    Serial.println();
+    Serial.println();
     
     last_time = millis();
   }
+}
+
+void debugPrint(String values, int length) {
+  // print top of box
+  for (int i = 0; i < length; i++) {
+    Serial.print("+----------");
+  }
+  Serial.println("+");
+
+  // print headers
+  String headers[] = {"AbortValve", "QD", "Vent", "Ignite", "Purge", "Fill", "Dump", "Heatpad", "MPV", "Siren"};
+  for (int i = 0; i < length; ++i) {
+    char buffer[12];
+    sprintf(buffer, "%11s", headers[i]);
+    Serial.print(buffer);
+  }
+  Serial.println();
+
+  for (int i = 0; i < length; i++) {
+    Serial.print("+----------");
+  }
+  Serial.println("+");
+
+  // print individual received values
+  for (int i = 1; i < length + 1; ++i) {
+    char buffer[12];
+    sprintf(buffer, "%6c%5s", values[i], "");
+    Serial.print(buffer);
+  }
+  Serial.println();
+
+  // print bottom of box
+  for (int i = 0; i < length; i++) {
+    Serial.print("+----------");
+  }
+  Serial.println("+");
 }
