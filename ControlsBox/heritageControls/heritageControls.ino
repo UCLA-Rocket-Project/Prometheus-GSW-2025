@@ -12,9 +12,9 @@
 #define qd 18
 #define purge 5
 #define mpv 4
-#define ignite 15
+#define ignite 15 //15
 #define abortSiren 23
-#define abortValve 13
+#define abortValve 13  //13
 
 
 unsigned long long delay_time = 250;
@@ -105,10 +105,10 @@ void loop() {
     const short DUMP_SWITCH = 6; 
     const short VENT_SWITCH = 2;
     const short QD_SWITCH = 1;
-    const short IGNITE_SWITCH = 3;
+    const short IGNITE_SWITCH = 0; //3
     const short MPV_SWITCH = 8;
     const short OUTLET_SWITCH = 7;
-    const short ABORT_VALVE_SWITCH = 0;
+    const short ABORT_VALVE_SWITCH = 3; //0
 
     if(message[FILL_SWITCH] == ACTUATED)
       digitalWrite(fill, LOW);
@@ -156,9 +156,16 @@ void loop() {
     digitalWrite(outlet, HIGH);
 
     if(message[ABORT_VALVE_SWITCH] == ACTUATED)
+      digitalWrite(fill, HIGH);
+      digitalWrite(dump, HIGH);
+      digitalWrite(vent, HIGH);
+      digitalWrite(purge, HIGH);
+      digitalWrite(qd, HIGH);
+      digitalWrite(ignite, LOW);
+      digitalWrite(mpv, HIGH);
       digitalWrite(abortValve, HIGH);
     if(message[ABORT_VALVE_SWITCH] == '0')
-    digitalWrite(abortValve, LOW);
+      digitalWrite(abortValve, LOW);
     
     last_time = millis();
   }
