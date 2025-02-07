@@ -74,6 +74,26 @@ void setup() {
  Serial.begin(9600);
  pinMode(InterruptPin, INPUT_PULLUP);
  attachInterrupt(InterruptPin, isr, FALLING);
+pinMode(abortSiren, OUTPUT);
+pinMode(ignite, OUTPUT);
+pinMode(fill, OUTPUT);
+pinMode(vent, OUTPUT);
+pinMode(dump, OUTPUT);
+pinMode(qd, OUTPUT);
+pinMode(mpv, OUTPUT);
+pinMode(purge, OUTPUT);
+pinMode(outlet, OUTPUT);
+pinMode(abortValve, OUTPUT);
+digitalWrite(abortSiren, LOW);//off
+digitalWrite(ignite, LOW);//off
+digitalWrite(fill, HIGH);//closed
+digitalWrite(vent, HIGH);//open
+digitalWrite(dump, HIGH);//open
+digitalWrite(qd, HIGH);//open
+digitalWrite(mpv, HIGH);
+digitalWrite(purge, HIGH);//closed
+digitalWrite(outlet, HIGH);//closed
+digitalWrite(abortValve, LOW);//closed
 }
 
 void executeCommand(String command) {
@@ -82,6 +102,9 @@ void executeCommand(String command) {
     if (command == "onfill"){
         digitalWrite(fill, LOW);
         state[0] = 1;
+    }
+    else if (command == "abort"){
+      isr();
     }
     else if (command == "offfill"){
         digitalWrite(fill, HIGH);
