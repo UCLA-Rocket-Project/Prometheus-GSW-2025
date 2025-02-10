@@ -1,3 +1,5 @@
+// THIS IS MEANT FOR THE CONTROLS BOX, IN THE EVENT THAT THE ETHERNET CONNECTION DOESN'T WORK
+
 #include <Arduino.h>
 #include <assert.h>
 
