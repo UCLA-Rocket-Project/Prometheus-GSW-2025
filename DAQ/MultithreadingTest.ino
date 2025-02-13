@@ -1,11 +1,22 @@
+// Changelog:
+// 12/3: Added sending to rs485
+
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <freertos/queue.h>
-// #include <Adafruit_ADS1X15.h>
+#include <Adafruit_ADS1X15.h>
+#include <HardwareSerial.h>
 #include <string>
 using namespace std;
 
-// Adafruit_ADS1015 ads;
+Adafruit_ADS1015 ads;
+
+// ETHERNET CONNECTION
+#define RO_PIN 16
+#define DI_PIN 17
+#define DE_RE_PIN 23
+
+HardwareSerial rs485Serial(2);
 
 // Number of sensors
 const int NUM_PT = 4;
@@ -19,13 +30,12 @@ void readSensorsTask(void *pvParameters) {
     while (true) {
         // Read from each sensor
         for (int i = 0; i < NUM_PT; i++) {
-            // float raw = ads.readADC_SingleEnded(i); //Comment this if running simulation
-            // sensorData[i] = ads.computeVolts(raw);
-            sensorData[i] = 2.0; //Comment this if running real ADC
+            float raw = ads.readADC_SingleEnded(i); //Comment this if running simulation
+            sensorData[i] = ads.computeVolts(raw);
+            // sensorData[i] = 2.0; //Comment this if running real ADC
         }
         // Send data to the queue
         xQueueSend(sensorQueue, &sensorData, portMAX_DELAY); 
-        vTaskDelay(pdMS_TO_TICKS(200)); // Delay for 200ms for debugging, can remove
     }
 }
 
@@ -37,10 +47,11 @@ void combineAndPrintTask(void *pvParameters) {
             // Combine data into a string
             String storeStr = "Asensorvals ";
             for (int i = 0; i < NUM_PT; i++) {
-                storeStr += "pt" + String(i + 1) + "=" + String(receivedData[i]) + ", ";
+                storeStr += "pt" + String(i + 1) + "=" + String(receivedData[i]) + ",";
             }
             storeStr.remove(storeStr.length() - 2); // Remove trailing comma
             storeStr+="Z";
+            rs485Serial.println(storeStr);
             Serial.println(storeStr);
         }
     }
@@ -48,11 +59,18 @@ void combineAndPrintTask(void *pvParameters) {
 
 void setup() {
     Serial.begin(115200);
-    // Initialize ADS1015
-    // if (!ads.begin()) {
-    //     Serial.println("Failed to initialize ADS.");
-    //     while (1);
-    // }
+    // Initialize ADS1015;
+    if (!ads.begin()) {
+        Serial.println("Failed to initialize ADS.");
+        while (1);
+    }
+
+    //Ethernet Connection
+    pinMode(DE_RE_PIN, OUTPUT);
+    digitalWrite(DE_RE_PIN, HIGH);
+
+    // put your setup code here, to run once:
+    rs485Serial.begin(115200, SERIAL_8N1, RO_PIN, DI_PIN);
 
     // Create a queue to hold sensor data
     sensorQueue = xQueueCreate(1, sizeof(float[NUM_PT]));
