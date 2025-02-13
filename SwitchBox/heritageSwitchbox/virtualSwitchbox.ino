@@ -8,7 +8,7 @@
 //jumper wire to HIGH
 
 #define RE 26 //13
-#define DE 27
+#define DE 26
 //RE to 26
 //DE to 27
 
