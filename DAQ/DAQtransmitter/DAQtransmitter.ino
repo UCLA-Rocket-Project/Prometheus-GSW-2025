@@ -1,3 +1,5 @@
+//TODO: INCLUDE MICROSD AND LOAD CELL CODE FOR TRANSMISSION
+
 #include <string>
 #include <Adafruit_ADS1X15.h>
 #include <HardwareSerial.h>
