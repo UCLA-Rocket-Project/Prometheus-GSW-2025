@@ -63,43 +63,6 @@ void setup() {
   last_time = millis();
 }
 
-void loop() {
-    // send a message to the controls box
-  if((millis() - last_time) > delay_time)
-  {
-    String message;
-
-    String AbortValve = String(state[9]);
-    String Fill = String(state[0]);
-    String Purge = String(state[5]);
-    String Dump = String(state[3]); //open at 0
-    String Vent = String(state[4]); //open at 0
-    String QD = String (state[6]);
-    String Ignite = String(state[7]);
-    String MPV = String(state[8]);
-    String Heatpad = String(state[1]);
-    String Siren = String(state[2]);
-
-    message = ('A' + AbortValve + QD + Vent + Ignite + Purge + Fill + Dump + Heatpad + MPV + Siren + 'Z');
-    
-    rs485Serial.println(message);
-    Serial.println("Sent:");
-    Serial.println(message);
-    
-    debugPrint(message, STATE_LENGTH);
-
-    last_time = millis();
-  }
-
-
-  // check for updates from user
-  if (Serial.available() > 0) {
-    String input = Serial.readStringUntil('\n');  // Read user input until newline
-    input.trim();  // Trim leading/trailing whitespace
-    executeCommand(input);
-  }
-}
-
 void executeCommand(String command) {
     // Convert to lowercase for case-insensitive comparison
     command.toLowerCase();
@@ -166,8 +129,6 @@ void executeCommand(String command) {
     } else if (command == "abort") {
       if(state[9] == 0) {
         state[9] = 1;
-      } else {
-        state[9] = 0;
       }
     }
     // if (command == "onfill") {
@@ -236,10 +197,10 @@ void executeCommand(String command) {
     // else if (command == "offabort") {
     //     state[9] = 0;
     // }
-    else{
+    else {
       Serial.println("Unable to recognise invalid command");
     }
-}
+  }
 
 void debugPrint(String values, int length) {
     // print top of box
@@ -272,3 +233,40 @@ void debugPrint(String values, int length) {
     }
     Serial.println("+");
   }
+
+void loop() {
+    // send a message to the controls box
+  if((millis() - last_time) > delay_time)
+  {
+    String message;
+
+    String AbortValve = String(state[9]);
+    String Fill = String(state[0]);
+    String Purge = String(state[5]);
+    String Dump = String(state[3]); //open at 0
+    String Vent = String(state[4]); //open at 0
+    String QD = String (state[6]);
+    String Ignite = String(state[7]);
+    String MPV = String(state[8]);
+    String Heatpad = String(state[1]);
+    String Siren = String(state[2]);
+
+    message = ('A' + AbortValve + QD + Vent + Ignite + Purge + Fill + Dump + Heatpad + MPV + Siren + 'Z');
+    
+    rs485Serial.println(message);
+    Serial.println("Sent:");
+    Serial.println(message);
+    
+    debugPrint(message, STATE_LENGTH);
+
+    last_time = millis();
+  }
+
+
+  // check for updates from user
+  if (Serial.available() > 0) {
+    String input = Serial.readStringUntil('\n');  // Read user input until newline
+    input.trim();  // Trim leading/trailing whitespace
+    executeCommand(input);
+  }
+}
