@@ -50,8 +50,8 @@ void setup() {
 void loop() {
   while (!rs485Serial.available() && millis() - last_time > 1000){
     Serial.println("Unavailable...");
-    if (millis() - last_time > 10000){
-      digitalWrite(abortSiren, HIGH);
+     if (millis() - last_time > 10000){
+       digitalWrite(abortSiren, HIGH);
     }
     if (millis() - last_time > 20000){
       Serial.println("Aborted...");

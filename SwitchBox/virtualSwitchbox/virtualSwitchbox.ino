@@ -1,7 +1,10 @@
 // THIS IS MEANT FOR THE SWITCHBOX, IN CASE SOME OF THE SWTICHES DONT WORK AND YOU STILL NEED TO USE THE RS485 CONNECTION
 
+
+//Changed commands to toggle
 #include <HardwareSerial.h> 
 #include <Arduino.h>
+#include <string>
 
 #define RO_PIN 16 //32 boRD
 #define DI_PIN 17 //35
@@ -61,7 +64,7 @@ void setup() {
 }
 
 void loop() {
-  // send a message to the controls box
+    // send a message to the controls box
   if((millis() - last_time) > delay_time)
   {
     String message;
@@ -69,8 +72,8 @@ void loop() {
     String AbortValve = String(state[9]);
     String Fill = String(state[0]);
     String Purge = String(state[5]);
-    String Dump = String(state[3]);
-    String Vent = String(state[4]);
+    String Dump = String(state[3]); //open at 0
+    String Vent = String(state[4]); //open at 0
     String QD = String (state[6]);
     String Ignite = String(state[7]);
     String MPV = String(state[8]);
@@ -88,6 +91,7 @@ void loop() {
     last_time = millis();
   }
 
+
   // check for updates from user
   if (Serial.available() > 0) {
     String input = Serial.readStringUntil('\n');  // Read user input until newline
@@ -99,74 +103,141 @@ void loop() {
 void executeCommand(String command) {
     // Convert to lowercase for case-insensitive comparison
     command.toLowerCase();
-    if (command == "onfill") {
+    if(command == "fill") {
+      if(state[0] == 0) {
         state[0] = 1;
-    }
-    else if (command == "offfill") {
+      } else {
         state[0] = 0;
-    }
-    else if (command == "onheatpad") {
+      }
+    } else if (command == "headpad") {
+      if(state[1] == 0) {
         state[1] = 1;
-    }
-    else if (command == "offheatpad") {
+      } else {
         state[1] = 0;
-    }
-    else if (command=="onoutlet"){
+      }
+    } else if (command == "outlet") {
+      if(state[1] == 0) {
         state[1] = 1;
-    }
-    else if (command=="offoutlet"){
+      } else {
         state[1] = 0;
-    }
-    else if (command == "onsiren"){  
+      }
+    } else if (command == "siren") {
+      if(state[2] == 0) {
         state[2] = 1;
-    }
-    else if (command=="offsiren"){
+      } else {
         state[2] = 0;
-    }
-    else if (command=="ondump"){
+      }
+    } else if (command == "dump") {
+      if(state[3] == 0) {
         state[3] = 1;
-    }
-    else if (command=="offdump"){
+      } else {
         state[3] = 0;
-    }
-    else if (command=="onvent"){
+      }
+    } else if (command == "vent") {
+      if(state[4] == 0) {
         state[4] = 1;
-    }
-    else if (command=="offvent"){
+      } else {
         state[4] = 0;
-    }
-    else if (command=="onpurge"){
+      }
+    } else if (command == "purge") {
+      if(state[5] == 0) {
         state[5] = 1;
-    }
-    else if (command=="offpurge"){
+      } else {
         state[5] = 0;
-    }
-    else if (command=="onqd"){
+      }
+    } else if (command == "qd") {
+      if(state[6] == 0) {
         state[6] = 1;
-    }
-    else if (command=="offqd"){
+      } else {
         state[6] = 0;
-    }
-    else if (command=="onignite"){
+      }
+    } else if (command == "ignite") {
+      if(state[7] == 0) {
         state[7] = 1;
-    }
-    else if (command=="offignite"){
+      } else {
         state[7] = 0;
-    }
-    else if (command=="onmpv"){
+      }
+    } else if (command == "mpv") {
+      if(state[8] == 0) {
         state[8] = 1;
-    }
-    else if (command=="offmpv"){
+      } else {
         state[8] = 0;
-    }
-    else if (command == "onabort") {
+      }
+    } else if (command == "abort") {
+      if(state[9] == 0) {
         state[9] = 1;
-    }
-    else if (command == "offabort") {
+      } else {
         state[9] = 0;
+      }
     }
+    // if (command == "onfill") {
+    //     state[0] = 1;
+    // }
+    // else if (command == "offfill") {
+    //     state[0] = 0;
+    // }
+    // else if (command == "onheatpad") {
+    //     state[1] = 1;
+    // }
+    // else if (command == "offheatpad") {
+    //     state[1] = 0;
+    // }
+    // else if (command=="onoutlet"){
+    //     state[1] = 1;
+    // }
+    // else if (command=="offoutlet"){
+    //     state[1] = 0;
+    // }
+    // else if (command == "onsiren"){  
+    //     state[2] = 1;
+    // }
+    // else if (command=="offsiren"){
+    //     state[2] = 0;
+    // }
+    // else if (command=="ondump"){
+    //     state[3] = 1;
+    // }
+    // else if (command=="offdump"){
+    //     state[3] = 0;
+    // }
+    // else if (command=="onvent"){
+    //     state[4] = 1;
+    // }
+    // else if (command=="offvent"){
+    //     state[4] = 0;
+    // }
+    // else if (command=="onpurge"){
+    //     state[5] = 1;
+    // }
+    // else if (command=="offpurge"){
+    //     state[5] = 0;
+    // }
+    // else if (command=="onqd"){
+    //     state[6] = 1;
+    // }
+    // else if (command=="offqd"){
+    //     state[6] = 0;
+    // }
+    // else if (command=="onignite"){
+    //     state[7] = 1;
+    // }
+    // else if (command=="offignite"){
+    //     state[7] = 0;
+    // }
+    // else if (command=="onmpv"){
+    //     state[8] = 1;
+    // }
+    // else if (command=="offmpv"){
+    //     state[8] = 0;
+    // }
+    // else if (command == "onabort") {
+    //     state[9] = 1;
+    // }
+    // else if (command == "offabort") {
+    //     state[9] = 0;
+    // }
     else{
-    Serial.println("Unable to recognise invalid command");
+      Serial.println("Unable to recognise invalid command");
     }
 }
 
@@ -191,7 +262,11 @@ void debugPrint(String values, int length) {
     // print individual received values
     for (int i = 1; i < length + 1; ++i) {
       char buffer[12];
+      //Serial.print(values[i]);
+      //char displayChar = (values[i] == 0) ? 'c' : 'o';
       sprintf(buffer, "%6c%5s", values[i], "");
+      //sprintf(buffer, "%6c%5s", values[i], "");
+      //sprintf(buffer, "%6c%5s", values[i] == 0 ? 'c' : 'o', "");
       Serial.print(buffer);
     }
     Serial.println();
