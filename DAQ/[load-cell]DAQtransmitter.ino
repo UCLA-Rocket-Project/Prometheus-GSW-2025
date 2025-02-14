@@ -10,8 +10,10 @@ using namespace std;
 
 //Adafruit_ADS1115 ads;  /* Use this for the 16-bit version */
 Adafruit_ADS1015 ads;     /* Use this for the 12-bit version */
-//Number of pressure transducers
+
+// Number of Pressure Transducers
 const int NUM_PT = 3;
+
 // Data Sending Interval Settings
 unsigned long long delay_time = 200;
 unsigned long long last_time = 0;
@@ -42,6 +44,7 @@ void setup() {
   Serial.begin(9600);
   last_time = millis();
   Serial.println("ADC Range: +/- 6.144V (1 bit = 3mV/ADS1015, 0.1875mV/ADS1115)");
+  
   // The ADC input range (or gain) can be changed via the following
   // functions, but be careful never to exceed VDD +0.3V max, or to
   // exceed the upper and lower limits if you adjust the input range!
@@ -62,15 +65,15 @@ void setup() {
   // Load Cell Measurement
   LC1.begin(LC1_DOUT_PIN, LC1_SCK_PIN);
   //LC1.set_scale(LC1_calibration);
-  //LC1.tare(); // Reset load cell to 0
+  //LC1.tare(); // reset load cell to 0
 }
 
 void loop() {
   if((millis() - last_time) > delay_time){
     float ptVals[NUM_PT];
-    long lcVals[NUM_LC];
+    long lcVals[NUM_LC]; // since read() outputs long (heritage was using floats though)
 
-    // Read Pressure Transducer values
+    // Read Pressure Transducer Values
     for (int i = 0; i < NUM_PT; i++)
     {
       float raw = ads.readADC_SingleEnded(i);
