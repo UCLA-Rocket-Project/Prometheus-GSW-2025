@@ -8,5 +8,5 @@ Code for 2024-2025 Ground Software Systems
 * [DAQ Transmitter](https://github.com/UCLA-Rocket-Project/Prometheus-GSW-2025/blob/main/DAQ/DAQtransmitter/DAQtransmitter.ino)
 
 ### Controls
-* [(Virtual) Switchbox](https://github.com/UCLA-Rocket-Project/Prometheus-GSW-2025/blob/main/SwitchBox/heritageSwitchbox/virtualSwitchbox.ino)
+* [(Virtual) Switchbox](https://github.com/UCLA-Rocket-Project/Prometheus-GSW-2025/blob/main/SwitchBox/virtualSwitchbox/virtualSwitchbox.ino)
 * [Controls Box](https://github.com/UCLA-Rocket-Project/Prometheus-GSW-2025/blob/main/ControlsBox/heritageControls/heritageControls.ino)

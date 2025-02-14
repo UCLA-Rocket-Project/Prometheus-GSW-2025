@@ -147,7 +147,7 @@ void loop() {
       digitalWrite(vent, HIGH);//open
       digitalWrite(dump, HIGH);//open
       digitalWrite(qd, HIGH);//open
-      digitalWrite(mpv, HIGH);
+      digitalWrite(mpv, LOW);
       digitalWrite(purge, HIGH);//closed
       digitalWrite(abortValve, HIGH);
     }

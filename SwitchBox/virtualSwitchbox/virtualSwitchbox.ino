@@ -262,11 +262,7 @@ void debugPrint(String values, int length) {
     // print individual received values
     for (int i = 1; i < length + 1; ++i) {
       char buffer[12];
-      //Serial.print(values[i]);
-      //char displayChar = (values[i] == 0) ? 'c' : 'o';
       sprintf(buffer, "%6c%5s", values[i], "");
-      //sprintf(buffer, "%6c%5s", values[i], "");
-      //sprintf(buffer, "%6c%5s", values[i] == 0 ? 'c' : 'o', "");
       Serial.print(buffer);
     }
     Serial.println();
