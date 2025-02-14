@@ -100,8 +100,8 @@ void loop() {
     //fake values to pass to GUI
     float pt4 = 0;
     float pt5 = 0;
-    float pt6 = 0;  
-    float lc1 = 0;  
+    float pt6 = 0;
+    float lc1 = lcVals[0];  
     float lc2 = 0;  
 
     String storeStr = "Asensorvals pt1=" + String(ptVals[0]) + 
