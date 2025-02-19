@@ -3,7 +3,7 @@
 ## Conclusions
 1. Reading from the sensors is not a bottleneck
     - Takes a couple of milliseconds to read from each sensor
-        - the fact that it takes 9 ms to read from a pt and 151 to read from all pts may be a sign that waiting for a reading from a sensor blocks reading from other sensors, but even if that were true, the delay is in milliseconds, which is inconsequential
+        - the fact that it takes 9ms to read from a pt and 151ms to read from all pts may be a sign that waiting for a reading from a sensor blocks reading from other sensors, but even if that were true, the delay is in milliseconds, which is inconsequential
 
 2. Reading from Serial is the bottleneck
     - The delay in data transmission for the DAQ is set at 200ms, which equates to readings of 5hz
