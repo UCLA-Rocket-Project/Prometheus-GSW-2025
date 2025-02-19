@@ -30,9 +30,9 @@ void loop() {
     for (int i = 0; i < n; ++i) {
       // Print SSID and RSSI for each network found
       Serial.print(i + 1);
-      Serial.print(": ");
+      Serial.print("{");
       Serial.print(WiFi.SSID(i));
-      Serial.print(" (");
+      Serial.print("}(");
       Serial.print(WiFi.RSSI(i)); //tells you the signal strength
       Serial.print(")");
       Serial.println((WiFi.encryptionType(i) == WIFI_AUTH_OPEN)?" ":"*");
