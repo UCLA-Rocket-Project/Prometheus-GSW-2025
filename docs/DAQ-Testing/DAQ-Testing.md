@@ -6,7 +6,7 @@
         - the fact that it takes 9ms to read from a pt and 151ms to read from all pts may be a sign that waiting for a reading from a sensor blocks reading from other sensors, but even if that were true, the delay is in milliseconds, which is inconsequential
 
 2. Reading from Serial is the bottleneck
-    - The delay in data transmission for the DAQ is set at 200ms, which equates to readings of 5hz
+    - The <a href="https://github.com/UCLA-Rocket-Project/Prometheus-GSW-2025/blob/bb0b003fae307957acf3e87183a53c777a301f43/DAQ/DAQtransmitter/DAQtransmitter.ino#L14C1-L14C37">delay in data transmission for the DAQ is set at 200ms</a>, which equates to readings of 5hz
     - I should have measured this, but just by eyeballing it, the rate of data transfer to the laptop is much slower than 5hz. 
         - This can be supplemented by comparing the rate at which the new lines are printed with the Grafana Code, against a python loop that prints a new line every 200ms
             ```
