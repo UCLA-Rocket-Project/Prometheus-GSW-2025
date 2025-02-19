@@ -1,8 +1,16 @@
+//NOTE: 
+// your wifi name should not have any apostrophes or spaces
+// restarting the esp32 often works well for reconnection lmao
+
+//TODO:
+// - figure out how to send messages to python - MQTT?
+// - dump message to show all available networks (maybe idk not a high priority)
+
 #include <WiFi.h>
 #include <WiFiUdp.h>
 
-const char* ssid = "euan"; //this name should not have spaces or apostrophes
-const char* password = "peepeepoopoo";
+const char* ssid = "username"; //this name should not have spaces or apostrophes
+const char* password = "password";
 const char *udpAddress = "127.0.0.1"; // Your computer's IP address
 const int udpPort = 80;  // Port to send the packet to
 WiFiUDP udp;
