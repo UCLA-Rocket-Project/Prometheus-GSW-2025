@@ -5,9 +5,11 @@
 #include <HardwareSerial.h>
 #include "SPI.h"
 using namespace std;
+#define ADS1_ADDRESS (0x49)
 
 //Adafruit_ADS1115 ads;  /* Use this for the 16-bit version */
 Adafruit_ADS1015 ads;     /* Use this for the 12-bit version */
+Adafruit_ADS1015 ads1; 
 //Number of pressure transducers
 const int NUM_PT = 6;
 const int NUM_LC = 2
@@ -49,6 +51,10 @@ void setup() {
     Serial.println("Failed to initialize ADS.");
     while (1);
   }
+  // if (!ads.begin(ADS1_ADDRESS)) {
+  //   Serial.println("Failed to initialize ADS1.");
+  //   while (1);
+  // }
 }
 void loop() {
   if((millis() - last_time) > delay_time){

@@ -209,7 +209,8 @@ void debugPrint(String values, int length) {
     }
     Serial.println("+");
     // print headers
-    String headers[] = {"AbortValve", "QD", "Vent", "Ignite", "Purge", "Fill", "Dump", "Heatpad", "MPV", "Siren"};
+    //String headers[] = {"AbortValve", "QD", "Vent", "Ignite", "Purge", "Fill", "Dump", "Heatpad", "MPV", "Siren"};
+    String headers[] = {"AbortValve", "QD", "Vent", "Ignite", "MPV", "Fill", "Dump", "Heatpad", "Ignite", "Siren"};
     for (int i = 0; i < length; ++i) {
       char buffer[12];
       sprintf(buffer, "%11s", headers[i]);
