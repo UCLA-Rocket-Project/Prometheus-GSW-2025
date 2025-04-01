@@ -102,7 +102,7 @@ void executeCommand(String command) {
       } else {
         state[4] = 0;
       }
-    } else if (command == "purge") {
+    } else if (command == "mpv") { // previously purge 
       if(state[5] == 0) {
         state[5] = 1;
       } else {
@@ -114,13 +114,13 @@ void executeCommand(String command) {
       } else {
         state[6] = 0;
       }
-    } else if (command == "ignite") {
-      if(state[7] == 0) {
-        state[7] = 1;
-      } else {
-        state[7] = 0;
-      }
-    } else if (command == "mpv") {
+    // } else if (command == "ignite") {
+    //   if(state[7] == 0) {
+    //     state[7] = 1;
+    //   } else {
+    //     state[7] = 0;
+    //   }
+    } else if (command == "ignite") { // previous command was MPV
       if(state[8] == 0) {
         state[8] = 1;
       } else {

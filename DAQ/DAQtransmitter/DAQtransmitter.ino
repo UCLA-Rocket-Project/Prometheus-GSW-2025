@@ -9,7 +9,8 @@ using namespace std;
 //Adafruit_ADS1115 ads;  /* Use this for the 16-bit version */
 Adafruit_ADS1015 ads;     /* Use this for the 12-bit version */
 //Number of pressure transducers
-const int NUM_PT = 3;
+const int NUM_PT = 6;
+const int NUM_LC = 2
 // Data Sending Interval Settings
 unsigned long long delay_time = 200;
 unsigned long long last_time = 0;
@@ -52,31 +53,42 @@ void setup() {
 void loop() {
   if((millis() - last_time) > delay_time){
     float ptVals[NUM_PT];
+    float lcVals[NUM_LC]
 
     // Read Pressure Transducer values
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < NUM_PT; i++)
     {
       float raw = ads.readADC_SingleEnded(i);
       ptVals[i] = ads.computeVolts(raw);
+    }
+
+    for (int j = 0; j < NUM_LC; j++)
+    {
+      float raw = ads.readADC_SingleEnded(j);
+      lcVals[j] = ads.computeVolts(raw);
     }
     //  // Calibration for PTs (likely have to calibrate everytime you flow)
     ptVals[0] = ptVals[0] * 381.0376825 - 124.3444374;
     ptVals[1] = ptVals[1] * 381.2890799 - 120.337546;
     ptVals[2] = ptVals[2] * 380.6974487 - 114.0943018;
-    // ptVals[3] = ptVals[3] * 420 - 259;
+    // ptVals[3] = ptVals[3] * 1 - 0;
+    // ptVals[4] = ptVals[4] * 1 - 0;
+    // ptVals[5] = ptVals[5] * 1 - 0;
 
-    //fake values to pass to GUI
-    float pt5 = 0;
-    float pt6 = 0;  
-    float lc1 = 0;  
-    float lc2 = 0;  
+    lcVals[0] = lcVals[0] * 1 - 0;
+    lcVals[1] = lcVals[1] * 1 - 0;
+    int pt3 = 0
+    int pt4 = 0
+    int pt5 = 0
+    int lc1 = 0
+    int lc2 = 0
 
     String storeStr = "Asensorvals pt1=" + String(ptVals[0]) + 
                   ",pt2=" + String(ptVals[1]) + 
                   ",pt3=" + String(ptVals[2]) + 
-                  ",pt4=" + String(ptVals[3]) + 
-                  ",pt5=" + String(pt5) + 
-                  ",pt6=" + String(pt6) + 
+                  ",pt4=" + String(pt3) + 
+                  ",pt5=" + String(pt4) + 
+                  ",pt6=" + String(pt5) + 
                   ",lc1=" + String(lc1) + 
                   ",lc2=" + String(lc2) + 
                   "Z";
