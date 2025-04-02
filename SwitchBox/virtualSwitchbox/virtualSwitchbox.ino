@@ -1,6 +1,5 @@
 // THIS IS MEANT FOR THE SWITCHBOX, IN CASE SOME OF THE SWTICHES DONT WORK AND YOU STILL NEED TO USE THE RS485 CONNECTION
 
-
 //Changed commands to toggle
 #include <HardwareSerial.h> 
 #include <Arduino.h>
@@ -72,7 +71,7 @@ void executeCommand(String command) {
       } else {
         state[0] = 0;
       }
-    } else if (command == "headpad") {
+    } /*else if (command == "heatpad") {
       if(state[1] == 0) {
         state[1] = 1;
       } else {
@@ -84,7 +83,7 @@ void executeCommand(String command) {
       } else {
         state[1] = 0;
       }
-    } else if (command == "siren") {
+    }*/ else if (command == "siren") {
       if(state[2] == 0) {
         state[2] = 1;
       } else {
@@ -202,7 +201,8 @@ void executeCommand(String command) {
     }
   }
 
-void debugPrint(String values, int length) {
+void debugPrint(String values, int length1) {
+    int length = length1 - 2;
     // print top of box
     for (int i = 0; i < length; i++) {
       Serial.print("+----------");
@@ -210,7 +210,7 @@ void debugPrint(String values, int length) {
     Serial.println("+");
     // print headers
     //String headers[] = {"AbortValve", "QD", "Vent", "Ignite", "Purge", "Fill", "Dump", "Heatpad", "MPV", "Siren"};
-    String headers[] = {"AbortValve", "QD", "Vent", "Ignite", "MPV", "Fill", "Dump", "Heatpad", "Ignite", "Siren"};
+    String headers[] = {"AbortValve", "QD", "Vent", "MPV", "Fill", "Dump", "Ignite", "Siren"};
     for (int i = 0; i < length; ++i) {
       char buffer[12];
       sprintf(buffer, "%11s", headers[i]);
@@ -222,10 +222,16 @@ void debugPrint(String values, int length) {
     }
     Serial.println("+");
     // print individual received values
-    for (int i = 1; i < length + 1; ++i) {
-      char buffer[12];
-      sprintf(buffer, "%6c%5s", values[i], "");
-      Serial.print(buffer);
+    for (int i = 1; i < length1 + 1; ++i) {
+      if(i == 4 || i == 8) {
+        continue;
+      } else {
+        char buffer[12];
+//        sprintf(buffer, "%6c%5s", values[i], "");
+        sprintf(buffer, "%6c%5s", values[i], "");
+        // Print on bttom
+        Serial.print(buffer);
+      }
     }
     Serial.println();
     // print bottom of box
@@ -247,9 +253,9 @@ void loop() {
     String Dump = String(state[3]); //open at 0
     String Vent = String(state[4]); //open at 0
     String QD = String (state[6]);
-    String Ignite = String(state[7]);
+    String Ignite = String(state[7]); // skip
     String MPV = String(state[8]);
-    String Heatpad = String(state[1]);
+    String Heatpad = String(state[1]); //skip
     String Siren = String(state[2]);
 
     message = ('A' + AbortValve + QD + Vent + Ignite + Purge + Fill + Dump + Heatpad + MPV + Siren + 'Z');
