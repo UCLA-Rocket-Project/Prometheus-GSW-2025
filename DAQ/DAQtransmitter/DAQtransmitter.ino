@@ -4,27 +4,28 @@
 #include <Adafruit_ADS1X15.h>
 #include <HardwareSerial.h>
 #include "SPI.h"
-using namespace std;
-#define ADS1_ADDRESS (0x49)
-
-#include "HX711.h"
+#include <HX711.h>
 // HX711 #1
 #define HX1_DOUT 2
 #define HX1_CLK  15
 // HX711 #2 (swapped as requested)
 #define HX2_DOUT 33
 #define HX2_CLK  32
+
+#define ADS1_ADDRESS (0x49)
+
+using namespace std;
+
 HX711 scale1;
 HX711 scale2;
-float calibration_factor1 = -995.0;
-float calibration_factor2 = -995.0;
+float calibration_factor1 = -996.0;
 
 //Adafruit_ADS1115 ads;  /* Use this for the 16-bit version */
 Adafruit_ADS1015 ads;     /* Use this for the 12-bit version */
 Adafruit_ADS1015 ads1; 
 //Number of pressure transducers
 const int NUM_PT = 6;
-const int NUM_LC = 2
+const int NUM_LC = 2;
 // Data Sending Interval Settings
 unsigned long long delay_time = 200;
 unsigned long long last_time = 0;
@@ -61,11 +62,11 @@ void setup() {
   // ads.setGain(GAIN_SIXTEEN);    // 16x gain  +/- 0.256V  1 bit = 0.125mV  0.0078125mV
   // HX711 #1
   scale1.begin(HX1_DOUT, HX1_CLK);
-  scale1.set_scale(calibration_factor1);
+  scale1.set_scale(-995.0);
   scale1.tare();
   // HX711 #2
   scale2.begin(HX2_DOUT, HX2_CLK);
-  scale2.set_scale(calibration_factor2);
+  scale2.set_scale(-995.0);
   scale2.tare();
   Serial.println("HX711 #1 and #2 initialized and tared.");
   
@@ -79,9 +80,9 @@ void setup() {
   }
 }
 void loop() {
-  if((millis() - last_time) > delay_time){
+  if((millis() - last_time) > delay_time) {
     float ptVals[NUM_PT];
-    float lcVals[NUM_LC]
+    float lcVals[NUM_LC];
 
     // Read Pressure Transducer values
     for (int i = 0; i < 4; i++)
@@ -92,19 +93,25 @@ void loop() {
 
     for (int j = 4; j < 6; j++)
     {
-      float raw = ads1.readADC_SingleEnded(i);
-      ptVals[i] = ads1.computeVolts(raw);
+      float raw = ads1.readADC_SingleEnded(j-4);
+      ptVals[j] = ads1.computeVolts(raw);
     }
+
+    //   383.7480065  -119.6409757
+    // 381.2315195  -125.5011544
+    // 381.4313789  -108.0331038
+    // 388.3539547  -107.9081708
+    // 377.9846196  -117.9140663
     //  // Calibration for PTs (likely have to calibrate everytime you flow)
-    ptVals[0] = ptVals[0] * 381.0376825 - 124.3444374;
-    ptVals[1] = ptVals[1] * 381.2890799 - 120.337546;
-    ptVals[2] = ptVals[2] * 380.6974487 - 114.0943018;
-    ptVals[3] = ptVals[3] * 1 - 0;
-    ptVals[4] = ptVals[4] * 1 - 0;
+    ptVals[0] = ptVals[0] * 383.7480065 -119.6409757;
+    ptVals[1] = ptVals[1] * 381.2315195 -125.5011544;
+    ptVals[2] = ptVals[2] * 381.4313789 -108.0331038;
+    ptVals[3] = ptVals[3] * 388.3539547 -107.9081708;
+    ptVals[4] = ptVals[4] * 377.9846196 -117.9140663;
     ptVals[5] = ptVals[5] * 1 - 0;
 
-    lcVals[0] = scale1.get_units(5);
-    lcVals[1] = scale2.get_units(5);
+    lcVals[0] = scale1.get_units();
+    lcVals[1] = scale2.get_units();
     // int pt3 = 0
     // int pt4 = 0
     // int pt5 = 0
@@ -114,11 +121,11 @@ void loop() {
     String storeStr = "Asensorvals pt1=" + String(ptVals[0]) + 
                   ",pt2=" + String(ptVals[1]) + 
                   ",pt3=" + String(ptVals[2]) + 
-                  ",pt4=" + String(pt3) + 
-                  ",pt5=" + String(pt4) + 
-                  ",pt6=" + String(pt5) + 
-                  ",lc1=" + String(lc1) + 
-                  ",lc2=" + String(lc2) + 
+                  ",pt4=" + String(ptVals[3]) + 
+                  ",pt5=" + String(ptVals[4]) + 
+                  ",pt6=" + String(ptVals[5]) + 
+                  ",lc1=" + String(lcVals[0]) + 
+                  ",lc2=" + String(lcVals[1]) + 
                   "Z";
     Serial.println(storeStr);
     digitalWrite(DE_RE_PIN, HIGH);
@@ -126,7 +133,3 @@ void loop() {
     rs485Serial.println(storeStr);
   }
 }
-
-
-
-
