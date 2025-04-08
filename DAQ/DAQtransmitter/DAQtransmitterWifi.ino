@@ -1,4 +1,6 @@
 //TODO: INCLUDE MICROSD AND LOAD CELL CODE FOR TRANSMISSION
+//Changelog:
+// 8/4: Added wifi 
 
 #include <WiFi.h>
 #include <PubSubClient.h>
