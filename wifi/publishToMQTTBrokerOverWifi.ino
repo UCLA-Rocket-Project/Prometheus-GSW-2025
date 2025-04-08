@@ -16,9 +16,6 @@ long lastMsg = 0;
 
 void setup() {
   Serial.begin(115200);
-  // default settings
-  // (you can also pass in a Wire library object like &Wire2)
-  //status = bme.begin();  
   setup_wifi();
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
@@ -35,7 +32,7 @@ void setup_wifi() {
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    Serial.print(".");
+    Serial.println("still connecting...");
   }
 
   Serial.println("");
@@ -79,7 +76,6 @@ void loop() {
   if (!client.connected()) {
     reconnect();
   }
-  client.loop();
   long now = millis();
   if (now - lastMsg > 5000) {
     lastMsg = now;
