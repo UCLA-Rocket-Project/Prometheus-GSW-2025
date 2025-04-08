@@ -9,7 +9,7 @@
 #include <string>
 using namespace std;
 
-Adafruit_ADS1015 ads;
+// Adafruit_ADS1015 ads; //Comment this if running simulation
 
 // ETHERNET CONNECTION
 #define RO_PIN 16
@@ -30,9 +30,9 @@ void readSensorsTask(void *pvParameters) {
     while (true) {
         // Read from each sensor
         for (int i = 0; i < NUM_PT; i++) {
-            float raw = ads.readADC_SingleEnded(i); //Comment this if running simulation
-            sensorData[i] = ads.computeVolts(raw);
-            // sensorData[i] = 2.0; //Comment this if running real ADC
+            // float raw = ads.readADC_SingleEnded(i); //Comment this if running simulation
+            // sensorData[i] = ads.computeVolts(raw);
+            sensorData[i] = 2.0; //Comment this if running real ADC
         }
         // Send data to the queue
         xQueueSend(sensorQueue, &sensorData, portMAX_DELAY); 
@@ -59,11 +59,11 @@ void combineAndPrintTask(void *pvParameters) {
 
 void setup() {
     Serial.begin(115200);
-    // Initialize ADS1015;
-    if (!ads.begin()) {
-        Serial.println("Failed to initialize ADS.");
-        while (1);
-    }
+    // Initialize ADS1015; //Comment this if running simulation
+    // if (!ads.begin()) {
+    //     Serial.println("Failed to initialize ADS.");
+    //     while (1);
+    // }
 
     //Ethernet Connection
     pinMode(DE_RE_PIN, OUTPUT);
