@@ -1,3 +1,4 @@
+//For the most updated version, look for the wifi code under DAQTransmitter/
 //TODO: INCLUDE MICROSD AND LOAD CELL CODE FOR TRANSMISSION
 
 #include <string>
