@@ -13,8 +13,6 @@ const char* mqtt_server = "172.20.10.13";
 WiFiClient espClient;
 PubSubClient client(espClient);
 long lastMsg = 0;
-char msg[50];
-int value = 0;
 
 void setup() {
   Serial.begin(115200);
