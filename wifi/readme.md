@@ -1,6 +1,8 @@
 To set up MQTT on laptop:
 https://bhave.sh/micropython-mqtt/
-- run ```mosquito```
+- run ```mosquitto -c /opt/homebrew/etc/mosquitto/mosquitto.conf```
+- Note: mosquitto.conf itself must be modified. add this to the end of the file
+ ```listener 1883 allow_anonymous true```
 
 To publish to MQTT broker
 - publishToMQTTBrokerOverWifi.ino
