@@ -4,7 +4,6 @@ Code for 2024-2025 Ground Software Systems
 ## Wifi Test 4/8
 
 ### DAQ 
-* [WiFi DAQ Receiver](https://github.com/UCLA-Rocket-Project/Prometheus-GSW-2025/blob/main/DAQ/DAQreciever/DAQreceiverWifi.ino)
 * [WiFi DAQ Transmitter](https://github.com/UCLA-Rocket-Project/Prometheus-GSW-2025/blob/main/DAQ/DAQtransmitter/DAQtransmitterWifi.ino)
 
 ### Controls
