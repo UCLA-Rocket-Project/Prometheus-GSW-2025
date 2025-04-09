@@ -1,4 +1,3 @@
-# from serial import Serial
 import csv
 import sys
 import time
@@ -48,57 +47,58 @@ def writeToCSV(pt_data, writer):
 def main():
     global flag
     flag = True
+    
     # Open the CSV file and set up the writer
-    #with open('sensor_data.csv', mode='a', newline='') as file:
-    with open(path, mode='a', newline='') as file:
+    with open(path, mode='a', newline='') as file:  # Open the correct file here
         writer = csv.writer(file)
         
         # Write the header if the file is empty
         if file.tell() == 0:
             writer.writerow(['pt1', 'pt2', 'pt3', 'pt4', 'pt5', 'pt6', 'lc1', 'lc2', 'timestamp'])
-    def parseInputAndGrafana(input):
-        global flag
-        # Read the data and stream
-        if flag:
-            # Get current timestamp for Grafana to display the data
-            current_time = time.time_ns()
-            try:
-                pt_data = input
-            except KeyboardInterrupt:
+        
+        def parseInputAndGrafana(input):
+            global flag
+            # Read the data and stream
+            if flag:
+                # Get current timestamp for Grafana to display the data
+                current_time = time.time_ns()
+                try:
+                    pt_data = input
+                except KeyboardInterrupt:
                     # Handle KeyboardInterrupt to gracefully exit the program
                     print(f"\nProgram terminated by user. Wrote data to {path}\n")
                     flag = False
-            else:
-                if pt_data.startswith('A') and pt_data.endswith('Z'):
-                    
-                    # Remove the 'A' at the start and 'Z' at the end
-                    pt_data = pt_data[1:-1]
-                    
-                    # Add the timestamp at the end (you can modify this based on your needs)
-                    pt_data += " " + str(current_time)
-                    
-                    # Print the data for verification
-                    print(pt_data)
-                    
-                    # Write data to CSV
-                    writeToCSV(pt_data, writer)
-                    
-                    # Send data via UDP
-                    UDPClientSocket.sendto(pt_data.encode(), pressure_transducer_port)
-                    
-                    # Sleep for a short duration before reading the next value
-    def message_handling(client, userdata, msg):
-        parseInputAndGrafana(msg.payload.decode())
+                else:
+                    if pt_data.startswith('A') and pt_data.endswith('Z'):
+                        
+                        # Remove the 'A' at the start and 'Z' at the end
+                        pt_data = pt_data[1:-1]
+                        
+                        # Add the timestamp at the end (you can modify this based on your needs)
+                        pt_data += " " + str(current_time)
+                        
+                        # Print the data for verification
+                        print(pt_data)
+                        
+                        # Write data to CSV
+                        writeToCSV(pt_data, writer)
+                        
+                        # Send data via UDP
+                        UDPClientSocket.sendto(pt_data.encode(), pressure_transducer_port)
+                        
+                        # Sleep for a short duration before reading the next value
+        
+        def message_handling(client, userdata, msg):
+            parseInputAndGrafana(msg.payload.decode())
 
-    client = paho.Client()
-    client.on_message = message_handling
-    
-    if client.connect("localhost", 1883, 60) != 0:
-        print("Couldn't connect to the mqtt broker")
-        sys.exit(1)
+        client = paho.Client()
+        client.on_message = message_handling
+        
+        if client.connect("localhost", 1883, 60) != 0:
+            print("Couldn't connect to the mqtt broker")
+            sys.exit(1)
 
-    client.subscribe("esp32/output")
-    client.loop_forever()
+        client.subscribe("esp32/output")
+        client.loop_forever()
 
-    
 main()

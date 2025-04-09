@@ -4,7 +4,7 @@ import paho.mqtt.client as paho
 
 
 def message_handling(client, userdata, msg):
-    print(f"{msg.topic}: {msg.payload.decode()}")
+    print(f"{msg.payload.decode()}")
 
 
 client = paho.Client()
