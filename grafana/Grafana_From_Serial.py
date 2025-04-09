@@ -1,13 +1,15 @@
-from serial import Serial
+# from serial import Serial
 import csv
+import sys
 import time
 import socket
 import os.path
+import paho.mqtt.client as paho
 
 PORT = 'COM5'  # windows
 #PORT = '/dev/tty.usbserial-0001' # mac
 BAUDRATE = 115200  # Might need to change this based on your device
-ser = Serial(PORT, BAUDRATE, timeout=0.1)
+# ser = Serial(PORT, BAUDRATE, timeout=0.1)
 UDPClientSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
 pressure_transducer_port = ("127.0.0.1", 4001)
 
@@ -54,19 +56,18 @@ def main():
         # Write the header if the file is empty
         if file.tell() == 0:
             writer.writerow(['pt1', 'pt2', 'pt3', 'pt4', 'pt5', 'pt6', 'lc1', 'lc2', 'timestamp'])
-        
+    def parseInputAndGrafana(input):
+        global flag
         # Read the data and stream
-        while flag:
+        if flag:
             # Get current timestamp for Grafana to display the data
             current_time = time.time_ns()
             try:
-                pt_data = ser.readline().decode().strip()
+                pt_data = input
             except KeyboardInterrupt:
                     # Handle KeyboardInterrupt to gracefully exit the program
                     print(f"\nProgram terminated by user. Wrote data to {path}\n")
                     flag = False
-            except:
-                continue
             else:
                 if pt_data.startswith('A') and pt_data.endswith('Z'):
                     
@@ -86,4 +87,18 @@ def main():
                     UDPClientSocket.sendto(pt_data.encode(), pressure_transducer_port)
                     
                     # Sleep for a short duration before reading the next value
+    def message_handling(client, userdata, msg):
+        parseInputAndGrafana(msg.payload.decode())
+
+    client = paho.Client()
+    client.on_message = message_handling
+    
+    if client.connect("localhost", 1883, 60) != 0:
+        print("Couldn't connect to the mqtt broker")
+        sys.exit(1)
+
+    client.subscribe("esp32/output")
+    client.loop_forever()
+
+    
 main()
