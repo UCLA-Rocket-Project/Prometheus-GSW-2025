@@ -99,6 +99,10 @@ def main():
             sys.exit(1)
 
         client.subscribe("esp32/output")
-        client.loop_forever()
+        try:
+            client.loop_forever()
+        except KeyboardInterrupt:
+            print(f"\nProgram terminated by user. Wrote data to {path}\n")
+            flag = False
 
 main()

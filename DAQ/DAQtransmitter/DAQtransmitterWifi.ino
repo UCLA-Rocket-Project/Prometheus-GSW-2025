@@ -9,7 +9,7 @@
 #include <Adafruit_ADS1X15.h>
 #include <HardwareSerial.h>
 #include "SPI.h"
-// #include <HX711.h>
+#include <HX711.h>
 // HX711 #1
 #define HX1_DOUT 2
 #define HX1_CLK  15
@@ -22,21 +22,21 @@
 using namespace std;
 
 // Replace the next variables with your SSID/Password combination
-const char* ssid = "euan";
-const char* password = "peepeepoopoo";
+const char* ssid = "ILAY";
+const char* password = "lebronpookie123";
 // Add your MQTT Broker IP address, example:
-const char* mqtt_server = "172.20.10.13";
+const char* mqtt_server = "192.168.0.103";
 // run `ipconfig getifaddr en0` in your macbook terminal
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-// HX711 scale1;
-// HX711 scale2;
+HX711 scale1;
+HX711 scale2;
 float calibration_factor1 = -996.0;
 
 //Adafruit_ADS1115 ads;  /* Use this for the 16-bit version */
-// Adafruit_ADS1015 ads;     /* Use this for the 12-bit version */
-// Adafruit_ADS1015 ads1; 
+Adafruit_ADS1015 ads;     /* Use this for the 12-bit version */
+Adafruit_ADS1015 ads1; 
 //Number of pressure transducers
 const int NUM_PT = 6;
 const int NUM_LC = 2;
@@ -95,23 +95,23 @@ void setup() {
   // ads.setGain(GAIN_EIGHT);      // 8x gain   +/- 0.512V  1 bit = 0.25mV   0.015625mV
   // ads.setGain(GAIN_SIXTEEN);    // 16x gain  +/- 0.256V  1 bit = 0.125mV  0.0078125mV
   // HX711 #1
-  // scale1.begin(HX1_DOUT, HX1_CLK);
-  // scale1.set_scale(-995.0);
-  // scale1.tare();
-  // // HX711 #2
-  // scale2.begin(HX2_DOUT, HX2_CLK);
-  // scale2.set_scale(-995.0);
-  // scale2.tare();
+  scale1.begin(HX1_DOUT, HX1_CLK);
+  scale1.set_scale(-995.0);
+  scale1.tare();
+  // HX711 #2
+  scale2.begin(HX2_DOUT, HX2_CLK);
+  scale2.set_scale(-995.0);
+  scale2.tare();
   Serial.println("HX711 #1 and #2 initialized and tared.");
   
-  // if (!ads.begin()) {
-  //   Serial.println("Failed to initialize ADS.");
-  //   while (1);
-  // }
-  // if (!ads1.begin(ADS1_ADDRESS)) {
-  //   Serial.println("Failed to initialize ADS1.");
-  //   while (1);
-  // }
+  if (!ads.begin()) {
+    Serial.println("Failed to initialize ADS.");
+    while (1);
+  }
+  if (!ads1.begin(ADS1_ADDRESS)) {
+    Serial.println("Failed to initialize ADS1.");
+    while (1);
+  }
 
   //wifi code
   setup_wifi();
@@ -125,16 +125,16 @@ void loop() {
     // Read Pressure Transducer values
     for (int i = 0; i < 4; i++)
     {
-      ptVals[i] = 5.0;
-      // float raw = ads.readADC_SingleEnded(i);
-      // ptVals[i] = ads.computeVolts(raw);
+      //ptVals[i] = 5.0;
+      float raw = ads.readADC_SingleEnded(i);
+      ptVals[i] = ads.computeVolts(raw);
     }
 
     for (int j = 4; j < 6; j++)
     {
-      ptVals[j] = 5.0;
-      // float raw = ads1.readADC_SingleEnded(j-4);
-      // ptVals[j] = ads1.computeVolts(raw);
+      //ptVals[j] = 5.0;
+      float raw = ads1.readADC_SingleEnded(j-4);
+      ptVals[j] = ads1.computeVolts(raw);
     }
 
     //   383.7480065  -119.6409757
@@ -150,10 +150,10 @@ void loop() {
     ptVals[4] = ptVals[4] * 377.9846196 -117.9140663;
     ptVals[5] = ptVals[5] * 1 - 0;
 
-    lcVals[0] = 5.0;
-    lcVals[1] = 5.0;
-    // lcVals[0] = scale1.get_units();
-    // lcVals[1] = scale2.get_units();
+    // lcVals[0] = 5.0;
+    // lcVals[1] = 5.0;
+    lcVals[0] = scale1.get_units();
+    lcVals[1] = scale2.get_units();
     // int pt3 = 0
     // int pt4 = 0
     // int pt5 = 0
