@@ -118,6 +118,20 @@ void setup() {
   client.setServer(mqtt_server, 1883);
 }
 void loop() {
+  // retry loop in case internet connection fails
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("Network disconnection detected");
+
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(ssid, password);
+    delay(500);
+
+    while (WiFi.status() != WL_CONNECTED) {
+      Serial.println("Reconnecting to Wifi...");
+      delay(500);
+    }
+  }
+
   if((millis() - last_time) > delay_time) {
     float ptVals[NUM_PT];
     float lcVals[NUM_LC];
