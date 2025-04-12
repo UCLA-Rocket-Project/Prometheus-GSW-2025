@@ -13,6 +13,7 @@ UDPClientSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
 pressure_transducer_port = ("127.0.0.1", 4001)
 
 flag = True
+start_time_ns = time.time_ns()
 
 fileName = 'sensor_data'
 path = fileName+'.csv'
@@ -23,14 +24,14 @@ while os.path.exists(path):
 
 def writeToCSV(pt_data, writer):
     # Split pt_data into its components
-    pt_data_parts = pt_data.split()  # Split the string by spaces
+    # pt_data_parts = pt_data.split()  # Split the string by spaces
     
-    # The last part is the timestamp, which has no key label
-    timestamp = pt_data_parts[-1]  # Last element is the timestamp
+    # # The last part is the timestamp, which has no key label
+    # timestamp = pt_data_parts[-1]  # Last element is the timestamp
     
     # Extract sensor values from the remaining parts (all except the last part)
-    sensor_values = pt_data_parts[:-1]
-    sensor_values = sensor_values[1].split(",")
+    sensor_values = pt_data.split(" ")[1].split(",")
+    print(sensor_values)
     # Extract each sensor value by splitting on the '=' character
     pt1 = sensor_values[0].split("=")[1]
     pt2 = sensor_values[1].split("=")[1]
@@ -40,9 +41,10 @@ def writeToCSV(pt_data, writer):
     pt6 = sensor_values[5].split("=")[1]
     lc1 = sensor_values[6].split("=")[1]
     lc2 = sensor_values[7].split("=")[1]
+    time_since_start = sensor_values[8].split("=")[1]
     
     # Write data to CSV
-    writer.writerow([pt1, pt2, pt3, pt4, pt5, pt6, lc1, lc2, timestamp])
+    writer.writerow([pt1, pt2, pt3, pt4, pt5, pt6, lc1, lc2, int(time_since_start * 1_000_000) + start_time_ns])
 
 def main():
     global flag
@@ -60,8 +62,6 @@ def main():
             global flag
             # Read the data and stream
             if flag:
-                # Get current timestamp for Grafana to display the data
-                current_time = time.time_ns()
                 try:
                     pt_data = input
                 except KeyboardInterrupt:
@@ -75,13 +75,20 @@ def main():
                         pt_data = pt_data[1:-1]
                         
                         # Add the timestamp at the end (you can modify this based on your needs)
-                        pt_data += " " + str(current_time)
+                        # pt_data += " " + str(current_time)
                         
                         # Print the data for verification
                         print(pt_data)
                         
                         # Write data to CSV
                         writeToCSV(pt_data, writer)
+
+                        split_pt_data = pt_data.split(",")
+                        pt_data = ",".join(split_pt_data[:-1])
+                        timestamp = int(split_pt_data[-1].split("=")[1]) * 1_000_000 + start_time_ns
+                        pt_data += " " + str(timestamp)
+
+                        print(pt_data)
                         
                         # Send data via UDP
                         UDPClientSocket.sendto(pt_data.encode(), pressure_transducer_port)
