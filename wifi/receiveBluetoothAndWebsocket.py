@@ -1,6 +1,15 @@
 import asyncio
 from bleak import BleakClient, BleakScanner
 from typing import Optional
+import socketio
+import asyncio
+
+WEBSOCKET_ADDRESS = "http://localhost:3000"
+LIVE_DATA_PUSH_CHANNEL = "live/receive-data-stream-from-mqtt"
+ESP32UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
+
+# Global Socket.IO async client
+sio = socketio.AsyncClient()
 
 async def scan_for_devices(timeout: int = 5):
     """Scan for BLE devices for the specified timeout period."""
@@ -18,13 +27,21 @@ async def scan_for_devices(timeout: int = 5):
     
     return devices
 
-def notification_handler(sender: str, data: bytearray):
+async def notification_handler(sender: str, data: bytearray):
     """Callback for handling incoming notifications."""
     try:
         message = data.decode()
         print(f"\n[Notification] From {sender}: {message}")
+        try:
+            if sio.connected:
+                await sio.emit(LIVE_DATA_PUSH_CHANNEL, message)
+                print("Data sent")
+            else:
+                print("Socket is not connected.")
+        except Exception as e:
+            print(f"Error sending data: {e}")
     except UnicodeDecodeError:
-        print(f"\n[Notification] From {sender}: (non-decodable data) {data}")
+            print(f"\n[Notification] From {sender}: (non-decodable data) {data}")
 
 async def connect_and_receive(address: str, char_uuid: str):
     """Connect to a BLE device and listen for notifications on a given characteristic."""
@@ -75,10 +92,12 @@ async def main():
     print(f"Selected: {selected_device.name or 'Unknown'} ({selected_device.address})")
     
     # Let user enter a characteristic UUID to listen for notifications
-    char_uuid = input("Enter characteristic UUID to receive notifications from: ")
     
+    await sio.connect(WEBSOCKET_ADDRESS)
+    print("Connected to WebSocket.")
     # Connect and receive
-    await connect_and_receive(selected_device.address, char_uuid)
+    await connect_and_receive(selected_device.address, ESP32UUID)
+    await sio.disconnect()
 
 if __name__ == "__main__":
     try:
