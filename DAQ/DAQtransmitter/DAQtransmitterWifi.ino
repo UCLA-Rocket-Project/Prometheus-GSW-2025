@@ -181,7 +181,8 @@ void loop() {
                   ",pt5=" + String(ptVals[4]) + 
                   ",pt6=" + String(ptVals[5]) + 
                   ",lc1=" + String(lcVals[0]) + 
-                  ",lc2=" + String(lcVals[1]) + 
+                  ",lc2=" + String(lcVals[1]) +
+                  ",timestamp=" + String(millis())+ 
                   "Z";
                   
     while (!client.connected()) {

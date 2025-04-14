@@ -1,4 +1,4 @@
-//for hotfire
+//this should be the same as daqtransmitter, except with comments
 //TODO: INCLUDE MICROSD AND LOAD CELL CODE FOR TRANSMISSION
 //Changelog:
 // 4/8: Added wifi 
