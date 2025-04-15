@@ -22,6 +22,12 @@
 SFE_UBLOX_GNSS myGNSS;
 TwoWire wire = TwoWire(0);
 
+struct GpsData {
+  int32_t latitude;
+  int32_t longitude;
+  int32_t altitude;
+};
+
 // ICM 20948
 #define ICM_CS 17
 #define ICM_SCK 18
@@ -30,6 +36,13 @@ TwoWire wire = TwoWire(0);
 
 Adafruit_ICM20948 icm;
 uint16_t measurement_delay_us = 65535; // Delay between measurements for testing
+
+struct ICMData {
+  sensors_event_t accel;
+  sensors_event_t gyro;
+  sensors_event_t mag;
+  sensors_event_t icmTemp;
+};
 
 // BMP390
 #define BMP_SCK 18
@@ -40,11 +53,24 @@ uint16_t measurement_delay_us = 65535; // Delay between measurements for testing
 #define SEALEVELPRESSURE_HPA (1013.25)
 Adafruit_BMP3XX bmp;
 
+struct BMPData {
+  double bmpTemp;
+  double pressure;
+  double altitude;
+};
+
 // SD card
+#define SD_CS 4
+#define SD_MISO 13
+#define SD_MOSI 23
+#define SD_SCK 18
+
 #define FILE_NAME_MAX_LENGTH 100
 
-bool getNewFilename(char* new_file_name);
 char newFileName[FILE_NAME_MAX_LENGTH + 1];
+
+bool getNewFilename(char* new_file_name);
+void writeFile(fs::FS &fs, const char * path, const char * message);
 
 void setup()
 {
@@ -148,7 +174,7 @@ void setup()
   }
   Serial.println();
 
-  if (! bmp.begin_SPI(BMP_CS, BMP_SCK, BMP_MISO, BMP_MOSI)) {  // software SPI mode
+  if (! bmp.begin_SPI(BMP_CS, BMP_SCK, BMP_MISO, BMP_MOSI)) {
     Serial.println("Could not find a valid BMP3 sensor, check wiring!");
     while (1);
   }
@@ -160,85 +186,90 @@ void setup()
   bmp.setOutputDataRate(BMP3_ODR_50_HZ);
 
   // setup and write to the SD Card
+  SPIClass sd_spi;
+  sd_spi.begin(SD_SCK, SD_MISO, SD_MOSI);
+  if (!SD.begin(SD_CS, sd_spi)) {
+    Serial.println("Failed to initialize SD card");
+    while(1);
+  }
+
   getNewFilename(newFileName);
   Serial.println(newFileName);
+  writeFile(SD, newFileName, "gps_latitude,gps_logitude,gps_altitude,icm_accel,icm_gyro,icm_mag,icm_temp,bmp_temperature,bmp_pressure,bmp_altitude");
 }
 
-// /*void loop()
-// {
-//   // Request (poll) the position, velocity and time (PVT) information.
-//   // The module only responds when a new position is available. Default is once per second.
-//   // getPVT() returns true when new data is received
+void loop()
+{
+  // Request (poll) the position, velocity and time (PVT) information.
+  // The module only responds when a new position is available. Default is once per second.
+  // getPVT() returns true when new data is received
 
-//   int32_t latitude = -1;
-//   int32_t longitude = -1;
-//   int32_t altitude = -1;
+  struct GpsData gpsData = {-1, -1, -1};
   
-//   if (myGNSS.getPVT())
-//   {
-//     latitude = myGNSS.getLatitude();
+  if (myGNSS.getPVT())
+  {
+    gpsData.latitude = myGNSS.getLatitude();
+    gpsData.longitude = myGNSS.getLongitude();
+    gpsData.altitude = myGNSS.getAltitudeMSL(); // Altitude above Mean Sea Level
+  }
 
-//     longitude = myGNSS.getLongitude();
+  //  /* Get a new normalized sensor event */
+  struct ICMData icmData;
+  icm.getEvent(&icmData.accel, &icmData.gyro, &icmData.icmTemp, &icmData.mag);
 
-//     altitude = myGNSS.getAltitudeMSL(); // Altitude above Mean Sea Level
-//   }
+  Serial.print("\t\tTemperature *C");
+  Serial.print(icmData.icmTemp.temperature);
 
-//   //  /* Get a new normalized sensor event */
-//   sensors_event_t accel;
-//   sensors_event_t gyro;
-//   sensors_event_t mag;
-//   sensors_event_t temp;
-//   icm.getEvent(&accel, &gyro, &temp, &mag);
+  /* Display the results (acceleration is measured in m/s^2) */
+  Serial.print("\t\tAccel X: ");
+  Serial.print(icmData.accel.acceleration.x);
+  Serial.print(" \tY: ");
+  Serial.print(icmData.accel.acceleration.y);
+  Serial.print(" \tZ: ");
+  Serial.print(icmData.accel.acceleration.z);
+  Serial.println(" m/s^2 ");
 
-//   Serial.print("\t\tTemperature *C");
-//   Serial.print(temp.temperature);
+  Serial.print("\t\tMag X: ");
+  Serial.print(icmData.mag.magnetic.x);
+  Serial.print(" \tY: ");
+  Serial.print(icmData.mag.magnetic.y);
+  Serial.print(" \tZ: ");
+  Serial.print(icmData.mag.magnetic.z);
+  Serial.println(" uT");
 
-//   /* Display the results (acceleration is measured in m/s^2) */
-//   // Serial.print("\t\tAccel X: ");
-//   Serial.print(accel.acceleration.x);
-//   // Serial.print(" \tY: ");
-//   Serial.print(accel.acceleration.y);
-//   // Serial.print(" \tZ: ");
-//   Serial.print(accel.acceleration.z);
-//   // Serial.println(" m/s^2 ");
+  /* Display the results (acceleration is measured in m/s^2) */
+  Serial.print("\t\tGyro X: ");
+  Serial.print(icmData.gyro.gyro.x);
+  Serial.print(" \tY: ");
+  Serial.print(icmData.gyro.gyro.y);
+  Serial.print(" \tZ: ");
+  Serial.print(icmData.gyro.gyro.z);
+  Serial.println(" radians/s ");
+  Serial.println();
 
-//   // Serial.print("\t\tMag X: ");
-//   Serial.print(mag.magnetic.x);
-//   // Serial.print(" \tY: ");
-//   Serial.print(mag.magnetic.y);
-//   // Serial.print(" \tZ: ");
-//   Serial.print(mag.magnetic.z);
-//   // Serial.println(" uT");
+  struct BMPData bmpData = {-1, -1, -1};
+  if (bmp.performReading()) {
+    Serial.print("Temperature = ");
+    Serial.print(bmp.temperature);
+    Serial.println(" *C");
 
-//   /* Display the results (acceleration is measured in m/s^2) */
-//   // Serial.print("\t\tGyro X: ");
-//   Serial.print(gyro.gyro.x);
-//   // Serial.print(" \tY: ");
-//   Serial.print(gyro.gyro.y);
-//   // Serial.print(" \tZ: ");
-//   Serial.print(gyro.gyro.z);
-//   // Serial.println(" radians/s ");
-//   // Serial.println();
+    Serial.print("Pressure = ");
+    Serial.print(bmp.pressure / 100.0);
+    Serial.println(" hPa");
 
-//   if (bmp.performReading()) {
-//     // Serial.print("Temperature = ");
-//     Serial.print(bmp.temperature);
-//     // Serial.println(" *C");
+    Serial.print("Approx. Altitude = ");
+    Serial.print(bmp.readAltitude(SEALEVELPRESSURE_HPA));
+    Serial.println(" m");
 
-//     // Serial.print("Pressure = ");
-//     Serial.print(bmp.pressure / 100.0);
-//     // Serial.println(" hPa");
+    Serial.println();
+    bmpData.bmpTemp = bmp.temperature;
+    bmpData.pressure = bmp.pressure / 100.0;
+    bmpData.altitude = bmp.readAltitude(SEALEVELPRESSURE_HPA);
+  }
 
-//     // Serial.print("Approx. Altitude = ");
-//     Serial.print(bmp.readAltitude(SEALEVELPRESSURE_HPA));
-//     // Serial.println(" m");
+  delay(2000);
 
-//     // Serial.println();
-//   }
-
-//   delay(2000);
-
-// }
+}
 
 // continuously increment file name with counter until you find a new file
 bool getNewFilename(char* new_file_name) {
@@ -256,4 +287,20 @@ bool getNewFilename(char* new_file_name) {
   }
 
   return false;
+}
+
+void writeFile(fs::FS &fs, const char *path, const char *message) {
+  Serial.printf("Writing file: %s\n", path);
+
+  File file = fs.open(path, FILE_WRITE);
+  if (!file) {
+    Serial.println("Failed to open file for writing");
+    return;
+  }
+  if (file.print(message)) {
+    Serial.println("File written");
+  } else {
+    Serial.println("Write failed");
+  }
+  file.close();
 }
