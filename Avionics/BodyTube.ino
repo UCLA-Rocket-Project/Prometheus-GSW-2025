@@ -14,6 +14,23 @@
 Adafruit_ADS1115 ads;  /* Use this for the 16-bit version */
 //Adafruit_ADS1015 ads;     /* Use this for the 12-bit version */
 
+String filename;
+
+String makeFile() {
+  int index = 0;
+  String path;
+
+  // Look for the first filename that does NOT exist
+  while (true) {
+    path = "/launch" + String(index) + ".txt";
+    if (!SD.exists(path)) {
+      break;
+    }
+    index++;
+  }
+  return path;
+}
+
 void appendFile(fs::FS &fs, const char *path, const char *message) {
   Serial.printf("Appending to file: %s\n", path);
 
@@ -87,7 +104,7 @@ void setup(void)
   // ads.setGain(GAIN_SIXTEEN);    // 16x gain  +/- 0.256V  1 bit = 0.125mV  0.0078125mV
   // ads.setGain(GAIN_ONE);
 
-  Wire.begin(); //default should be 21 and 22 for ESP32
+  Wire.begin(17, 16); // default should be 21 and 22 for ESP32 (SDA, SCL)
   if (!ads.begin()) {
     Serial.println("Failed to initialize ADS.");
     while (1);
@@ -113,8 +130,10 @@ void setup(void)
 
 
   Serial.println("SD initialization done.");
+
+  filename = makeFile();
   
-  writeFile(SD, "/test.txt", "STARTING TO WRITE VALUES ......\n");
+  writeFile(SD, filename.c_str(), "STARTING TO WRITE VALUES ......\n");
 
 }
 
@@ -137,15 +156,15 @@ void loop(void)
   
   //Serial.print("Writing to test.txt...");
   String message = "\n";
-  message += "PT1: " + String(pt1) + " " + String(v1) + "V\n";
-  message += "PT2: " + String(pt2) + " " + String(v2) + "V\n";
-  message += "PT3: " + String(pt3) + " " + String(v3) + "V\n";
+  message += "PT1: " + String(pt1) + " = " + String(v1) + "V\n";
+  message += "PT2: " + String(pt2) + " = " + String(v2) + "V\n";
+  message += "PT3: " + String(pt3) + " = " + String(v3) + "V\n";
 
   //Serial.print(message);
   //Serial.print(message.c_str());
   
-  appendFile(SD, "/test.txt", message.c_str());
-  readFile(SD, "/test.txt");
+  appendFile(SD, filename.c_str(), message.c_str());
+  readFile(SD, filename.c_str());
  
   delay(1000);
 }
