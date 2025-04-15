@@ -376,7 +376,7 @@ void appendFile(fs::FS &fs, const char *path, const char *message) {
 
 void writeSensorData(GpsData& gpsData, ICMData& icmData, BMPData& bmpData) {
   char csvEntry[CSV_ENTRY_MAX_LENGTH];
-  sprintf(csvEntry, "%3.8d,%3.8d,%5.8d,%5.8d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%6.5d,%6.5d,%6.5d\n",
+  sprintf(csvEntry, "%3.8d,%3.8d,%5.8d,%5.8d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
     gpsData.latitude,
     gpsData.longitude,
     gpsData.altitude,
