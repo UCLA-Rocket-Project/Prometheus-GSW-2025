@@ -25,7 +25,8 @@ TwoWire wire = TwoWire(0);
 struct GpsData {
   int32_t latitude;
   int32_t longitude;
-  int32_t altitude;
+  int32_t altitude; // gets height in mm above sea level
+  int32_t heading;
 };
 
 // ICM 20948
@@ -38,10 +39,19 @@ Adafruit_ICM20948 icm;
 uint16_t measurement_delay_us = 65535; // Delay between measurements for testing
 
 struct ICMData {
-  sensors_event_t accel;
-  sensors_event_t gyro;
-  sensors_event_t mag;
-  sensors_event_t icmTemp;
+  float accelX;
+  float accelY;
+  float accelZ;
+  
+  float gyroX;
+  float gyroY;
+  float gyroZ;
+  
+  float magX;
+  float magY;
+  float magZ;
+  
+  float icmTemp;
 };
 
 // BMP390
@@ -66,8 +76,10 @@ struct BMPData {
 #define SD_SCK 18
 
 #define FILE_NAME_MAX_LENGTH 100
+#define CSV_ENTRY_MAX_LENGTH 1024
 
-char newFileName[FILE_NAME_MAX_LENGTH + 1];
+SPIClass sd_spi;
+char *newFileName = "/datahehe.csv";
 
 bool getNewFilename(char* new_file_name);
 void writeFile(fs::FS &fs, const char * path, const char * message);
@@ -186,68 +198,107 @@ void setup()
   bmp.setOutputDataRate(BMP3_ODR_50_HZ);
 
   // setup and write to the SD Card
-  SPIClass sd_spi;
-  sd_spi.begin(SD_SCK, SD_MISO, SD_MOSI);
+  sd_spi.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
   if (!SD.begin(SD_CS, sd_spi)) {
     Serial.println("Failed to initialize SD card");
     while(1);
   }
 
-  getNewFilename(newFileName);
+  // getNewFilename(newFileName);
   Serial.println(newFileName);
-  writeFile(SD, newFileName, "gps_latitude,gps_logitude,gps_altitude,icm_accel,icm_gyro,icm_mag,icm_temp,bmp_temperature,bmp_pressure,bmp_altitude");
+  writeFile(SD, newFileName, "gps_latitude,gps_logitude,gps_altitude,gps_heading,icm_accel_x,icm_accel_y,icm_accel_z,icm_gyro_x,icm_gyro_y,icm_gyro_z,icm_mag_x,icm_mag_y,icm_mag_z,icm_temp,bmp_temperature,bmp_pressure,bmp_altitude");
 }
 
 void loop()
 {
-  // Request (poll) the position, velocity and time (PVT) information.
-  // The module only responds when a new position is available. Default is once per second.
-  // getPVT() returns true when new data is received
+  struct GpsData gpsData = {-1, -1, -1, -1};
+  getGPSData(gpsData);
 
-  struct GpsData gpsData = {-1, -1, -1};
-  
+  struct ICMData icmData;
+  getICMData(icmData);
+
+  struct BMPData bmpData = {-1, -1, -1};
+  getBMPData(bmpData);
+
+  writeSensorData(gpsData, icmData, bmpData);
+  delay(2000);
+}
+
+void getGPSData(GpsData& gpsData) {
   if (myGNSS.getPVT())
   {
     gpsData.latitude = myGNSS.getLatitude();
     gpsData.longitude = myGNSS.getLongitude();
     gpsData.altitude = myGNSS.getAltitudeMSL(); // Altitude above Mean Sea Level
+    gpsData.heading = myGNSS.getHeading();
+    
+    Serial.print(F("Lat: "));
+    Serial.print(gpsData.latitude);
+    Serial.print(F(" Long: "));
+    Serial.print(gpsData.longitude);
+    Serial.print(F(" (degrees * 10^-7)"));
+    Serial.print(F(" Alt: "));
+    Serial.print(gpsData.altitude);
+    Serial.print(F(" (mm)"));
+    Serial.print(F(" Heading: "));
+    Serial.print(gpsData.heading);
+    Serial.print(F(" (degrees * 10^-5)"));
   }
+}
 
-  //  /* Get a new normalized sensor event */
-  struct ICMData icmData;
-  icm.getEvent(&icmData.accel, &icmData.gyro, &icmData.icmTemp, &icmData.mag);
+void getICMData(ICMData& icmData) {
+  sensors_event_t accel;
+  sensors_event_t gyro;
+  sensors_event_t mag;
+  sensors_event_t temp;
+  icm.getEvent(&accel, &gyro, &temp, &mag);
 
   Serial.print("\t\tTemperature *C");
-  Serial.print(icmData.icmTemp.temperature);
+  Serial.print(temp.temperature);
+  Serial.println();
+  icmData.icmTemp = temp.temperature;
 
   /* Display the results (acceleration is measured in m/s^2) */
   Serial.print("\t\tAccel X: ");
-  Serial.print(icmData.accel.acceleration.x);
+  Serial.print(accel.acceleration.x);
   Serial.print(" \tY: ");
-  Serial.print(icmData.accel.acceleration.y);
+  Serial.print(accel.acceleration.y);
   Serial.print(" \tZ: ");
-  Serial.print(icmData.accel.acceleration.z);
+  Serial.print(accel.acceleration.z);
   Serial.println(" m/s^2 ");
+  icmData.accelX = accel.acceleration.x;
+  icmData.accelY = accel.acceleration.y;
+  icmData.accelZ = accel.acceleration.z;
+
 
   Serial.print("\t\tMag X: ");
-  Serial.print(icmData.mag.magnetic.x);
+  Serial.print(mag.magnetic.x);
   Serial.print(" \tY: ");
-  Serial.print(icmData.mag.magnetic.y);
+  Serial.print(mag.magnetic.y);
   Serial.print(" \tZ: ");
-  Serial.print(icmData.mag.magnetic.z);
+  Serial.print(mag.magnetic.z);
   Serial.println(" uT");
+  icmData.magX = mag.magnetic.x;
+  icmData.magY = mag.magnetic.y;
+  icmData.magZ = mag.magnetic.z;
+
 
   /* Display the results (acceleration is measured in m/s^2) */
   Serial.print("\t\tGyro X: ");
-  Serial.print(icmData.gyro.gyro.x);
+  Serial.print(gyro.gyro.x);
   Serial.print(" \tY: ");
-  Serial.print(icmData.gyro.gyro.y);
+  Serial.print(gyro.gyro.y);
   Serial.print(" \tZ: ");
-  Serial.print(icmData.gyro.gyro.z);
+  Serial.print(gyro.gyro.z);
   Serial.println(" radians/s ");
   Serial.println();
+  icmData.gyroX = gyro.gyro.x;
+  icmData.gyroY = gyro.gyro.y;
+  icmData.gyroZ = gyro.gyro.z;
 
-  struct BMPData bmpData = {-1, -1, -1};
+}
+
+void getBMPData(BMPData& bmpData) {
   if (bmp.performReading()) {
     Serial.print("Temperature = ");
     Serial.print(bmp.temperature);
@@ -266,9 +317,6 @@ void loop()
     bmpData.pressure = bmp.pressure / 100.0;
     bmpData.altitude = bmp.readAltitude(SEALEVELPRESSURE_HPA);
   }
-
-  delay(2000);
-
 }
 
 // continuously increment file name with counter until you find a new file
@@ -303,4 +351,48 @@ void writeFile(fs::FS &fs, const char *path, const char *message) {
     Serial.println("Write failed");
   }
   file.close();
+}
+
+void appendFile(fs::FS &fs, const char *path, const char *message) {
+  Serial.printf("Appending to file: %s\n", path);
+
+  File file = fs.open(path, FILE_APPEND);
+  if (!file) {
+    Serial.println("Failed to open file for appending");
+    return;
+  }
+  if (file.print(message)) {
+    Serial.println("Message appended");
+  } else {
+    Serial.println("Append failed");
+  }
+  file.close();
+}
+
+void writeSensorData(GpsData& gpsData, ICMData& icmData, BMPData& bmpData) {
+  char csvEntry[CSV_ENTRY_MAX_LENGTH];
+  sprintf(csvEntry, "%3.8d,%3.8d,%5.8d,%5.8d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%6.5d,%6.5d,%6.5d\n",
+    gpsData.latitude,
+    gpsData.longitude,
+    gpsData.altitude,
+    gpsData.heading,
+    icmData.accelX,
+    icmData.accelY,
+    icmData.accelZ,
+    icmData.gyroX,
+    icmData.gyroY,
+    icmData.gyroZ,
+    icmData.magX,
+    icmData.magY,
+    icmData.magZ,
+    icmData.icmTemp,
+    bmpData.bmpTemp,
+    bmpData.pressure,
+    bmpData.altitude
+  );
+
+  appendFile(SD, newFileName, csvEntry);
+
+  Serial.print("\n\nWrote:");
+  Serial.println(csvEntry);
 }
