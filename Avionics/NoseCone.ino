@@ -55,10 +55,10 @@ struct ICMData {
 };
 
 // BMP390
+#define BMP_CS 16
 #define BMP_SCK 18
 #define BMP_MISO 13
 #define BMP_MOSI 23
-#define BMP_CS 16
 
 #define SEALEVELPRESSURE_HPA (1013.25)
 Adafruit_BMP3XX bmp;
@@ -71,14 +71,14 @@ struct BMPData {
 
 // SD card
 #define SD_CS 4
+#define SD_SCK 18
 #define SD_MISO 13
 #define SD_MOSI 23
-#define SD_SCK 18
 
 #define FILE_NAME_MAX_LENGTH 100
 #define CSV_ENTRY_MAX_LENGTH 1024
 
-SPIClass sd_spi;
+SPIClass custom_spi_bus;
 char *newFileName = "/datahehe.csv";
 
 bool getNewFilename(char* new_file_name);
@@ -88,6 +88,19 @@ void setup()
 {
   Serial.begin(115200);
   delay(1000);
+
+  // move SPI initialization here to not overwrite the initialization of other sensors
+  custom_spi_bus.begin(SD_SCK, SD_MISO, SD_MOSI, -1);
+
+  // setup and write to the SD Card
+  if (!SD.begin(SD_CS, custom_spi_bus)) {
+    Serial.println("Failed to initialize SD card");
+    while(1);
+  }
+
+  // getNewFilename(newFileName);
+  Serial.println(newFileName);
+  writeFile(SD, newFileName, "gps_latitude,gps_logitude,gps_altitude,gps_heading,icm_accel_x,icm_accel_y,icm_accel_z,icm_gyro_x,icm_gyro_y,icm_gyro_z,icm_mag_x,icm_mag_y,icm_mag_z,icm_temp,bmp_temperature,bmp_pressure,bmp_altitude");
 
   // GPS setup
   wire.begin(GPS_SDA, GPS_SCL);
@@ -101,7 +114,8 @@ void setup()
   myGNSS.setI2COutput(COM_TYPE_UBX); //Set the I2C port to output UBX only (turn off NMEA noise)
 
   // ICM20648 setup
-  if (!icm.begin_SPI(ICM_CS, ICM_SCK, ICM_MISO, ICM_MOSI)) {
+  if (!icm.begin_SPI(ICM_CS, &custom_spi_bus)) {
+
     Serial.println("Failed to find ICM20948 chip");
     while (1) {
       delay(10);
@@ -186,7 +200,7 @@ void setup()
   }
   Serial.println();
 
-  if (! bmp.begin_SPI(BMP_CS, BMP_SCK, BMP_MISO, BMP_MOSI)) {
+  if (!bmp.begin_SPI(BMP_CS, &custom_spi_bus)) {
     Serial.println("Could not find a valid BMP3 sensor, check wiring!");
     while (1);
   }
@@ -196,17 +210,6 @@ void setup()
   bmp.setPressureOversampling(BMP3_OVERSAMPLING_4X);
   bmp.setIIRFilterCoeff(BMP3_IIR_FILTER_COEFF_3);
   bmp.setOutputDataRate(BMP3_ODR_50_HZ);
-
-  // setup and write to the SD Card
-  sd_spi.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
-  if (!SD.begin(SD_CS, sd_spi)) {
-    Serial.println("Failed to initialize SD card");
-    while(1);
-  }
-
-  // getNewFilename(newFileName);
-  Serial.println(newFileName);
-  writeFile(SD, newFileName, "gps_latitude,gps_logitude,gps_altitude,gps_heading,icm_accel_x,icm_accel_y,icm_accel_z,icm_gyro_x,icm_gyro_y,icm_gyro_z,icm_mag_x,icm_mag_y,icm_mag_z,icm_temp,bmp_temperature,bmp_pressure,bmp_altitude");
 }
 
 void loop()
@@ -243,6 +246,7 @@ void getGPSData(GpsData& gpsData) {
     Serial.print(F(" Heading: "));
     Serial.print(gpsData.heading);
     Serial.print(F(" (degrees * 10^-5)"));
+    Serial.println();
   }
 }
 
@@ -253,12 +257,15 @@ void getICMData(ICMData& icmData) {
   sensors_event_t temp;
   icm.getEvent(&accel, &gyro, &temp, &mag);
 
+  icmData.icmTemp = temp.temperature;
   Serial.print("\t\tTemperature *C");
   Serial.print(temp.temperature);
   Serial.println();
-  icmData.icmTemp = temp.temperature;
 
   /* Display the results (acceleration is measured in m/s^2) */
+  icmData.accelX = accel.acceleration.x;
+  icmData.accelY = accel.acceleration.y;
+  icmData.accelZ = accel.acceleration.z;
   Serial.print("\t\tAccel X: ");
   Serial.print(accel.acceleration.x);
   Serial.print(" \tY: ");
@@ -266,11 +273,11 @@ void getICMData(ICMData& icmData) {
   Serial.print(" \tZ: ");
   Serial.print(accel.acceleration.z);
   Serial.println(" m/s^2 ");
-  icmData.accelX = accel.acceleration.x;
-  icmData.accelY = accel.acceleration.y;
-  icmData.accelZ = accel.acceleration.z;
 
 
+  icmData.magX = mag.magnetic.x;
+  icmData.magY = mag.magnetic.y;
+  icmData.magZ = mag.magnetic.z;
   Serial.print("\t\tMag X: ");
   Serial.print(mag.magnetic.x);
   Serial.print(" \tY: ");
@@ -278,12 +285,12 @@ void getICMData(ICMData& icmData) {
   Serial.print(" \tZ: ");
   Serial.print(mag.magnetic.z);
   Serial.println(" uT");
-  icmData.magX = mag.magnetic.x;
-  icmData.magY = mag.magnetic.y;
-  icmData.magZ = mag.magnetic.z;
 
 
   /* Display the results (acceleration is measured in m/s^2) */
+  icmData.gyroX = gyro.gyro.x;
+  icmData.gyroY = gyro.gyro.y;
+  icmData.gyroZ = gyro.gyro.z;
   Serial.print("\t\tGyro X: ");
   Serial.print(gyro.gyro.x);
   Serial.print(" \tY: ");
@@ -292,30 +299,28 @@ void getICMData(ICMData& icmData) {
   Serial.print(gyro.gyro.z);
   Serial.println(" radians/s ");
   Serial.println();
-  icmData.gyroX = gyro.gyro.x;
-  icmData.gyroY = gyro.gyro.y;
-  icmData.gyroZ = gyro.gyro.z;
 
 }
 
 void getBMPData(BMPData& bmpData) {
   if (bmp.performReading()) {
-    Serial.print("Temperature = ");
-    Serial.print(bmp.temperature);
-    Serial.println(" *C");
-
-    Serial.print("Pressure = ");
-    Serial.print(bmp.pressure / 100.0);
-    Serial.println(" hPa");
-
-    Serial.print("Approx. Altitude = ");
-    Serial.print(bmp.readAltitude(SEALEVELPRESSURE_HPA));
-    Serial.println(" m");
-
-    Serial.println();
     bmpData.bmpTemp = bmp.temperature;
     bmpData.pressure = bmp.pressure / 100.0;
     bmpData.altitude = bmp.readAltitude(SEALEVELPRESSURE_HPA);
+
+    Serial.print("Temperature = ");
+    Serial.print(bmpData.bmpTemp);
+    Serial.println(" *C");
+
+    Serial.print("Pressure = ");
+    Serial.print(bmpData.pressure);
+    Serial.println(" hPa");
+
+    Serial.print("Approx. Altitude = ");
+    Serial.print(bmpData.altitude);
+    Serial.println(" m");
+
+    Serial.println();
   }
 }
 
