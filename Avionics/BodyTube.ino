@@ -133,7 +133,7 @@ void setup(void)
 
   filename = makeFile();
   
-  writeFile(SD, filename.c_str(), "STARTING TO WRITE VALUES ......\n");
+  writeFile(SD, filename.c_str(), "PT1,PT2,PT3,V1,V2,V3\n");
 
 }
 
@@ -155,10 +155,11 @@ void loop(void)
 //  Serial.print("PT3: "); Serial.print(pt3); Serial.print(" = "); Serial.print(v3); Serial.println("V");
   
   //Serial.print("Writing to test.txt...");
-  String message = "\n";
-  message += "PT1: " + String(pt1) + " = " + String(v1) + "V\n";
-  message += "PT2: " + String(pt2) + " = " + String(v2) + "V\n";
-  message += "PT3: " + String(pt3) + " = " + String(v3) + "V\n";
+  //String message = "\n";
+//  message += "PT1: " + String(pt1) + " = " + String(v1) + "V\n";
+//  message += "PT2: " + String(pt2) + " = " + String(v2) + "V\n";
+//  message += "PT3: " + String(pt3) + " = " + String(v3) + "V\n";
+  String message = String(pt1) + "," + String(pt2) + "," + String(pt3) + "," + String(v1) + "," + String(v2) + "," + String(v3);
 
   //Serial.print(message);
   //Serial.print(message.c_str());
