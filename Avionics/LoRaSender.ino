@@ -435,7 +435,7 @@ void writeSensorData(GpsData& gpsData, ICMData& icmData, BMPData& bmpData) {
 
 void writeToLora(GpsData& gpsData, ICMData& icmData, BMPData& bmpData) {
     char loraEntry[CSV_ENTRY_MAX_LENGTH];
-    sprintf(loraEntry, "%3.8d,%3.8d,%5.8d,%5.8d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
+    sprintf(loraEntry, "A %3.8d,%3.8d,%5.8d,%5.8d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f Z",
         gpsData.latitude,
         gpsData.longitude,
         gpsData.altitude,
