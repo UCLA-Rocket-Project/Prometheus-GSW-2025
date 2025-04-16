@@ -23,7 +23,7 @@
 #define MOSI_PIN 25
 #define CS_PIN 33
 #define RESET_PIN 14
-#define DIO0_PIN 27
+#define G0_PIN 27
 
 // GPS
 #define GPS_SDA 22
@@ -223,16 +223,15 @@ void setup()
   bmp.setOutputDataRate(BMP3_ODR_50_HZ);
 
   Serial.println("LoRa Sender");
-
-   // Initialize SPI with custom pins (SCK, MISO, MOSI, CS)
+  // Initialize SPI with custom pins (SCK, MISO, MOSI, CS)
   SPI.begin(SCK_PIN, MISO_PIN, MOSI_PIN, CS_PIN);
 
   // Tell LoRa library to use custom SPI
   LoRa.setSPI(SPI);
 
   // Set custom LoRa pins (CS, RESET, DIO0)
-  LoRa.setPins(CS_PIN, RESET_PIN, DIO0_PIN);
-  if (!LoRa.begin(9006)) {
+  LoRa.setPins(CS_PIN, RESET_PIN, G0_PIN);
+  if (!LoRa.begin(915E6)) {
     Serial.println("Starting LoRa failed!");
     while (1);
   }
@@ -454,7 +453,7 @@ void writeToLora(GpsData& gpsData, ICMData& icmData, BMPData& bmpData) {
         bmpData.altitude
     );
     Serial.println("Sending packet: ");
-    Lora.print(loraEntry);
+    LoRa.print(loraEntry);
     LoRa.endPacket();
     Serial.println("Finished Sending");
   }
