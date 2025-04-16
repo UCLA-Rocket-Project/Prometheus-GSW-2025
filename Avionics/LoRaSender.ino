@@ -435,7 +435,7 @@ void writeSensorData(GpsData& gpsData, ICMData& icmData, BMPData& bmpData) {
 
 void writeToLora(GpsData& gpsData, ICMData& icmData, BMPData& bmpData) {
     char loraEntry[CSV_ENTRY_MAX_LENGTH];
-    sprintf(loraEntry, "A %3.8d,%3.8d,%5.8d,%5.8d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f Z",
+    sprintf(loraEntry, "A %3.8d,%3.8d,%5.8d,%5.8d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f Z\n",
         gpsData.latitude,
         gpsData.longitude,
         gpsData.altitude,
@@ -453,6 +453,7 @@ void writeToLora(GpsData& gpsData, ICMData& icmData, BMPData& bmpData) {
         bmpData.altitude
     );
     Serial.println("Sending packet: ");
+    LoRa.beginPacket();
     LoRa.print(loraEntry);
     LoRa.endPacket();
     Serial.println("Finished Sending");
