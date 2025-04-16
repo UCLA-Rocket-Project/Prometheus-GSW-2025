@@ -254,7 +254,7 @@ void loop()
 
   writeSensorData(gpsData, icmData, bmpData);
   writeToLora(gpsData, icmData, bmpData);
-  delay(2000);
+  delay(500);
 
 }
 

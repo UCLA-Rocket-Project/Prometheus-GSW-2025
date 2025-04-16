@@ -12,7 +12,7 @@ void setup() {
   Serial.begin(115200);
   while (!Serial);
 
-  Serial.println("LoRa Sender");
+  Serial.println("LoRa Receiver");
 
    // Initialize SPI with custom pins (SCK, MISO, MOSI, CS)
   SPI.begin(SCK_PIN, MISO_PIN, MOSI_PIN, CS_PIN);
@@ -37,6 +37,5 @@ void loop() {
     while (LoRa.available()) {
       Serial.print((char)LoRa.read());
     }
-    Serial.println();
   }
 }
