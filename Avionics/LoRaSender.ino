@@ -407,7 +407,13 @@ void appendFile(fs::FS &fs, const char *path, const char *message) {
 
 void writeSensorData(GpsData& gpsData, ICMData& icmData, BMPData& bmpData) {
   char csvEntry[CSV_ENTRY_MAX_LENGTH];
-  sprintf(csvEntry, "%3.8d,%3.8d,%5.8d,%5.8d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
+  sprintf(csvEntry, 
+    "%3.8d,%3.8d,%5.8d,%5.8d," // gps data
+    "%f,%f,%f," // accel
+    "%f,%f,%f," // gyro
+    "%f,%f,%f," // mag
+    "%f," // icm temp
+    "%f,%f,%f\n", // bmp data
     gpsData.latitude,
     gpsData.longitude,
     gpsData.altitude,
@@ -435,7 +441,13 @@ void writeSensorData(GpsData& gpsData, ICMData& icmData, BMPData& bmpData) {
 
 void writeToLora(GpsData& gpsData, ICMData& icmData, BMPData& bmpData) {
     char loraEntry[CSV_ENTRY_MAX_LENGTH];
-    sprintf(loraEntry, "A %3.8d,%3.8d,%5.8d,%5.8d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f Z\n",
+    // every string should start with an A and end with a Z
+    sprintf(loraEntry, 
+      "A %3.8d,%3.8d,%5.8d,%5.8d," // gps data
+      "%f,%f,%f," // accel
+      "%f,%f,%f," // gyro
+      "%f,%f,%f," // mag
+      "%f,%f Z\n", // bmp
         gpsData.latitude,
         gpsData.longitude,
         gpsData.altitude,
