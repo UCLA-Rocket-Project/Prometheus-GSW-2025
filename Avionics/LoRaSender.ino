@@ -187,7 +187,7 @@ void setup()
   Serial.print("Gyro data rate (Hz) is approximately: ");
   Serial.println(gyro_rate);
 
-  // icm.setMagDataRate(AK09916_MAG_DATARATE_10_HZ);
+  icm.setMagDataRate(AK09916_MAG_DATARATE_20_HZ);
   Serial.print("Magnetometer data rate set to: ");
   switch (icm.getMagDataRate()) {
   case AK09916_MAG_DATARATE_SHUTDOWN:
