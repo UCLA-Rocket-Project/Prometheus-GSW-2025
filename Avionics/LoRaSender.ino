@@ -22,8 +22,8 @@
 #define MISO_PIN 35
 #define MOSI_PIN 25
 #define CS_PIN 33
-#define RESET_PIN 14
-#define G0_PIN 27
+#define RESET_PIN 27
+#define G0_PIN 14
 
 // GPS
 #define GPS_SDA 22
