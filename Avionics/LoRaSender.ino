@@ -90,7 +90,8 @@ struct BMPData {
 #define CSV_ENTRY_MAX_LENGTH 1024
 
 SPIClass custom_spi_bus;
-char *newFileName = "/datahehe.csv";
+// char *newFileName = "/datahehe.csv";
+char newFileName[FILE_NAME_MAX_LENGTH];
 
 bool getNewFilename(char* new_file_name);
 void writeFile(fs::FS &fs, const char * path, const char * message);
@@ -109,7 +110,7 @@ void setup()
     while(1);
   }
 
-  // getNewFilename(newFileName);
+  getNewFilename(newFileName);
   Serial.println(newFileName);
   writeFile(SD, newFileName, 
     "gps_latitude,gps_logitude,gps_altitude,gps_heading,"
@@ -258,8 +259,10 @@ void loop()
   struct BMPData bmpData = {-1, -1, -1};
   getBMPData(bmpData);
 
-  writeSensorData(gpsData, icmData, bmpData);
-  writeToLora(gpsData, icmData, bmpData);
+  unsigned long timeSinceStart = millis();
+
+  writeSensorData(gpsData, icmData, bmpData, timeSinceStart);
+  writeToLora(gpsData, icmData, bmpData, timeSinceStart);
   delay(500);
 
 }
@@ -411,7 +414,7 @@ void appendFile(fs::FS &fs, const char *path, const char *message) {
   file.close();
 }
 
-void writeSensorData(GpsData& gpsData, ICMData& icmData, BMPData& bmpData) {
+void writeSensorData(GpsData& gpsData, ICMData& icmData, BMPData& bmpData, unsigned long timeSinceStart) {
   char csvEntry[CSV_ENTRY_MAX_LENGTH];
   sprintf(csvEntry, 
     "%3.8d,%3.8d,%5.8d,%5.8d," // gps data
@@ -419,7 +422,8 @@ void writeSensorData(GpsData& gpsData, ICMData& icmData, BMPData& bmpData) {
     "%f,%f,%f," // gyro
     "%f,%f,%f," // mag
     "%f," // icm temp
-    "%f,%f,%f\n", // bmp data
+    "%f,%f,%f," // bmp data
+    "%lu\n",
     gpsData.latitude,
     gpsData.longitude,
     gpsData.altitude,
@@ -436,7 +440,8 @@ void writeSensorData(GpsData& gpsData, ICMData& icmData, BMPData& bmpData) {
     icmData.icmTemp,
     bmpData.bmpTemp,
     bmpData.pressure,
-    bmpData.altitude
+    bmpData.altitude,
+    timeSinceStart
   );
 
   appendFile(SD, newFileName, csvEntry);
@@ -445,7 +450,7 @@ void writeSensorData(GpsData& gpsData, ICMData& icmData, BMPData& bmpData) {
   Serial.println(csvEntry);
 }
 
-void writeToLora(GpsData& gpsData, ICMData& icmData, BMPData& bmpData) {
+void writeToLora(GpsData& gpsData, ICMData& icmData, BMPData& bmpData, unsigned long timeSinceStart) {
     char loraEntry[CSV_ENTRY_MAX_LENGTH];
     // every string should start with an A and end with a Z
     sprintf(loraEntry, 
@@ -453,7 +458,8 @@ void writeToLora(GpsData& gpsData, ICMData& icmData, BMPData& bmpData) {
       "%f,%f,%f," // accel
       "%f,%f,%f," // gyro
       "%f,%f,%f," // mag
-      "%f,%f Z\n", // bmp
+      "%f,%f,"
+      "%lu Z\n", // bmp
         gpsData.latitude,
         gpsData.longitude,
         gpsData.altitude,
@@ -468,7 +474,8 @@ void writeToLora(GpsData& gpsData, ICMData& icmData, BMPData& bmpData) {
         icmData.magY,
         icmData.magZ,
         bmpData.pressure,
-        bmpData.altitude
+        bmpData.altitude,
+        timeSinceStart
     );
     Serial.println("Sending packet: ");
     LoRa.beginPacket();
