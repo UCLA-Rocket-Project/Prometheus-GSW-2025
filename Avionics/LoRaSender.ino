@@ -111,7 +111,13 @@ void setup()
 
   // getNewFilename(newFileName);
   Serial.println(newFileName);
-  writeFile(SD, newFileName, "gps_latitude,gps_logitude,gps_altitude,gps_heading,icm_accel_x,icm_accel_y,icm_accel_z,icm_gyro_x,icm_gyro_y,icm_gyro_z,icm_mag_x,icm_mag_y,icm_mag_z,icm_temp,bmp_temperature,bmp_pressure,bmp_altitude");
+  writeFile(SD, newFileName, 
+    "gps_latitude,gps_logitude,gps_altitude,gps_heading,"
+    "icm_accel_x,icm_accel_y,icm_accel_z,"
+    "icm_gyro_x,icm_gyro_y,icm_gyro_z,"
+    "icm_mag_x,icm_mag_y,icm_mag_z,"
+    "icm_temp,"
+    "bmp_temperature,bmp_pressure,bmp_altitude\n");
 
   // GPS setup
   wire.begin(GPS_SDA, GPS_SCL);
