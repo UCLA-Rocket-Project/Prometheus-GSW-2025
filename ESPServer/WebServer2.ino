@@ -19,16 +19,20 @@ char newFileName[FILE_NAME_MAX_LENGTH];
 // Create AsyncWebServer object on port 80
 AsyncWebServer server(80);
 
-// #define CLK 18
-// #define CS 5
-// #define MOSI 23
-// #define MISO 19
-
+#ifdef BODY_TUBE
 // Body Tube
 #define CLK 14
 #define CS 15
 #define MOSI 13
 #define MISO 12
+#endif
+
+#ifdef NOSE_CONE
+#define CS 4
+#define CLK 18
+#define MISO 13
+#define MOSI 23
+#endif
 
 SPIClass spi;
 
