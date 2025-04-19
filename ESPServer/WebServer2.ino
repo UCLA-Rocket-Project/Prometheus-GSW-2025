@@ -59,10 +59,10 @@ void initSDCard(SPIClass& spi){
   uint64_t cardSize = SD.cardSize() / (1024 * 1024);
   Serial.printf("SD Card Size: %lluMB\n", cardSize);
 
-  writeFile(SD, "/data0.csv", "HI,bye,there\n");
-  writeFile(SD, "/data1.csv", "HI,bye,there\n");
-  writeFile(SD, "/data2.csv", "HI,bye,there\n");
-  appendFile(SD, "/data.csv", "1,2,3\n");
+//  writeFile(SD, "/data0.csv", "HI,bye,there\n");
+//  writeFile(SD, "/data1.csv", "HI,bye,there\n");
+//  writeFile(SD, "/data2.csv", "HI,bye,there\n");
+//  appendFile(SD, "/data.csv", "1,2,3\n");
   listDir(SD, "/", 0);
 }
 
@@ -194,7 +194,8 @@ void getLatestCSV(char* latestFileName) {
     char lastFoundFile[FILE_NAME_MAX_LENGTH + 1] = "ERROR"; // set as ERROR just in case
 
     while (true) {
-        sprintf(candidateFileName, "/data%d.csv", counter);
+        sprintf(candidateFileName, "/launch%d.txt", counter);
+        //sprintf(candidateFileName, "/data%d.csv", counter);
         Serial.print("Checking file: ");
         Serial.println(candidateFileName);
 
