@@ -10,6 +10,8 @@ import csv
 
 WEBSOCKET_ADDRESS = "https://to-da-moon.onrender.com/"
 LIVE_DATA_PUSH_CHANNEL = "live/receive-data-stream-from-mqtt"
+LIVE_LATLNG_PUSH_CHANNEL = "live/receive-data-stream-from-mqtt-latlng"
+sio = socketio.Client()
 
 start_time = time.time_ns()
 
@@ -208,16 +210,12 @@ def create_telegraf_string(processed_data: dict) -> str:
     
     return f"{measurement} {field_str} {str(start_time + int(processed_data["time_since_start"]))}"
 
-def send_to_websocket(data):
-    sio = socketio.Client()
+def send_to_websocket(data, channel=LIVE_DATA_PUSH_CHANNEL):
     try:
-        sio.connect(WEBSOCKET_ADDRESS)
-        sio.emit(LIVE_DATA_PUSH_CHANNEL, data)
-        print("WebSocket Data Sent:", data)
+        sio.emit(channel, data)
+        print(f"WebSocket Data Sent to {channel}:", data)
     except Exception as e:
-        print("WebSocket Error:", e)
-    finally:
-        sio.disconnect()
+        print("WebSocket Emit Error:", e)
 def extract_latlng_forwebsocket(sensor_data):
     targetLatLng = {
         "latitude": sensor_data['latitude'],
@@ -227,42 +225,68 @@ def extract_latlng_forwebsocket(sensor_data):
 
 # Read from Serial
 def main():
+    try:
+        sio.connect(WEBSOCKET_ADDRESS)
+    except Exception as e:
+        print("WebSocket Connection Error:", e)
+        return
     # ser.reset_input_buffer()  # Flushes the receive buffer
     # # read once to clear the buffer of useless values
     # ser.read_until(b"Z\n")
+
+    # Define CSV file name
+    csv_filename = "sensor_data_log.csv"
+
+    # Define the fieldnames from the keys of processed_readings
+    fieldnames = [
+        "latitude", "longitude", "gps_altitude", "heading",
+        "accelX", "accelY", "accelZ",
+        "gyroX", "gyroY", "gyroZ",
+        "magX", "magY", "magZ",
+        "pressure", "bmp_altitude", "time_since_start"
+    ]
+
+    # Open CSV file in write mode with newline='' to avoid blank lines on Windows
+    with open(csv_filename, mode='w', newline='') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader() 
     
-    # while True:
-    #     pt_data = ser.read_until(b"Z\n").strip().decode()
-    #     if pt_data.startswith("A ") and pt_data.endswith(" Z"):
-    #         # remove the string checking characters
-    #         readings = pt_data.split(" ")[1]
-    #         processed_readings = process_readings(readings)
+        # while True:
+        #     pt_data = ser.read_until(b"Z\n").strip().decode()
+        #     if pt_data.startswith("A ") and pt_data.endswith(" Z"):
+        #         # remove the string checking characters
+        #         readings = pt_data.split(" ")[1]
+        #         processed_readings = process_readings(readings)
+        #         # Write to CSV
+        #         writer.writerow(processed_readings)
 
-    #         processed_readings_telegraf_string = create_telegraf_string(processed_readings)
-    #         print("Sent ", processed_readings_telegraf_string)
 
-    #         # Send data via UDP
-    #         UDPClientSocket.sendto(processed_readings_telegraf_string.encode(), avionics_port)
-    #         try:
-    #             send_to_websocket(format_data(processed_readings))
-    #             send_to_websocket(extract_latlng_forwebsocket(process_readings))
-    #         except Exception as e:
-    #             # Optionally log this
-    #             print(f"WebSocket send failed: {e}")
-    #             pass
- 
+        #         processed_readings_telegraf_string = create_telegraf_string(processed_readings)
+        #         print("Sent ", processed_readings_telegraf_string)
 
-    while True:
-        print(create_telegraf_string(process_readings("sheesh")))
-        UDPClientSocket.sendto(create_telegraf_string(process_readings("sheesh")).encode(), avionics_port)
-        time.sleep(1)
-        try:
-            send_to_websocket(format_data(process_readings("sheesh")))
-            send_to_websocket(extract_latlng_forwebsocket(process_readings("sheesh")))
-        except Exception as e:
-                # Optionally log this
-                print(f"WebSocket send failed: {e}")
-                pass
+        #         # Send data via UDP
+        #         UDPClientSocket.sendto(processed_readings_telegraf_string.encode(), avionics_port)
+        #         try:
+        #             send_to_websocket(format_data(processed_readings))
+        #             send_to_websocket(extract_latlng_forwebsocket(process_readings),LIVE_LATLNG_PUSH_CHANNEL)
+        #         except Exception as e:
+        #             # Optionally log this
+        #             print(f"WebSocket send failed: {e}")
+        #             pass
+    
+
+        while True: 
+            print(create_telegraf_string(process_readings("sheesh")))
+            writer.writerow(process_readings("sheesh"))
+            UDPClientSocket.sendto(create_telegraf_string(process_readings("sheesh")).encode(), avionics_port)
+            time.sleep(1)
+            try:
+                send_to_websocket(format_data(process_readings("sheesh")))
+                send_to_websocket(extract_latlng_forwebsocket(process_readings("sheesh")),LIVE_LATLNG_PUSH_CHANNEL)
+            except Exception as e:
+                    # Optionally log this
+                    print(f"WebSocket send failed: {e}")
+                    pass
 
 
 if __name__ == "__main__":
