@@ -2,6 +2,7 @@ from serial import Serial
 import socket
 import time
 import socketio
+import csv
 
 # PORT = "/dev/cu.usbserial-210"  # Might need to change this based on your device
 # BAUDRATE = 115_200
@@ -217,6 +218,12 @@ def send_to_websocket(data):
         print("WebSocket Error:", e)
     finally:
         sio.disconnect()
+def extract_latlng_forwebsocket(sensor_data):
+    targetLatLng = {
+        "latitude": sensor_data['latitude'],
+        "longitude":sensor_data['longitude']
+    }
+    return targetLatLng
 
 # Read from Serial
 def main():
@@ -236,15 +243,26 @@ def main():
 
     #         # Send data via UDP
     #         UDPClientSocket.sendto(processed_readings_telegraf_string.encode(), avionics_port)
-
-    #         send_to_websocket(processed_readings)
+    #         try:
+    #             send_to_websocket(format_data(processed_readings))
+    #             send_to_websocket(extract_latlng_forwebsocket(process_readings))
+    #         except Exception as e:
+    #             # Optionally log this
+    #             print(f"WebSocket send failed: {e}")
+    #             pass
+ 
 
     while True:
         print(create_telegraf_string(process_readings("sheesh")))
         UDPClientSocket.sendto(create_telegraf_string(process_readings("sheesh")).encode(), avionics_port)
         time.sleep(1)
-
-        send_to_websocket(format_data(process_readings("sheesh")))
+        try:
+            send_to_websocket(format_data(process_readings("sheesh")))
+            send_to_websocket(extract_latlng_forwebsocket(process_readings("sheesh")))
+        except Exception as e:
+                # Optionally log this
+                print(f"WebSocket send failed: {e}")
+                pass
 
 
 if __name__ == "__main__":
