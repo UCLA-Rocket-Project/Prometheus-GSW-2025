@@ -104,7 +104,7 @@ void setup(void)
   // ads.setGain(GAIN_SIXTEEN);    // 16x gain  +/- 0.256V  1 bit = 0.125mV  0.0078125mV
   // ads.setGain(GAIN_ONE);
 
-  Wire.begin(17, 16); // default should be 21 and 22 for ESP32 (SDA, SCL)
+  Wire.begin(32, 33); // default should be 21 and 22 for ESP32 (SDA, SCL)
   if (!ads.begin()) {
     Serial.println("Failed to initialize ADS.");
     while (1);
@@ -159,13 +159,13 @@ void loop(void)
 //  message += "PT1: " + String(pt1) + " = " + String(v1) + "V\n";
 //  message += "PT2: " + String(pt2) + " = " + String(v2) + "V\n";
 //  message += "PT3: " + String(pt3) + " = " + String(v3) + "V\n";
-  String message = String(pt1) + "," + String(pt2) + "," + String(pt3) + "," + String(v1) + "," + String(v2) + "," + String(v3);
+  String message = String(pt1) + "," + String(pt2) + "," + String(pt3) + "," + String(v1) + "," + String(v2) + "," + String(v3) + ",";
 
   //Serial.print(message);
   //Serial.print(message.c_str());
   
   appendFile(SD, filename.c_str(), message.c_str());
-  readFile(SD, filename.c_str());
+  //readFile(SD, filename.c_str());
  
   delay(1000);
 }

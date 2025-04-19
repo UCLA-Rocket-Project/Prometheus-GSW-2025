@@ -19,10 +19,16 @@ char newFileName[FILE_NAME_MAX_LENGTH];
 // Create AsyncWebServer object on port 80
 AsyncWebServer server(80);
 
-#define CLK 18
-#define CS 5
-#define MOSI 23
-#define MISO 19
+// #define CLK 18
+// #define CS 5
+// #define MOSI 23
+// #define MISO 19
+
+// Body Tube
+#define CLK 14
+#define CS 15
+#define MOSI 13
+#define MISO 12
 
 SPIClass spi;
 
@@ -56,9 +62,8 @@ void initSDCard(SPIClass& spi){
   writeFile(SD, "/data0.csv", "HI,bye,there\n");
   writeFile(SD, "/data1.csv", "HI,bye,there\n");
   writeFile(SD, "/data2.csv", "HI,bye,there\n");
-
-
   appendFile(SD, "/data.csv", "1,2,3\n");
+  listDir(SD, "/", 0);
 }
 
 // Write to the SD card
@@ -117,6 +122,37 @@ void initWiFi() {
   Serial.println(WiFi.localIP());
 }
 
+void listDir(fs::FS &fs, const char *dirname, uint8_t levels) {
+   Serial.printf("Listing directory: %s\n", dirname);
+ 
+   File root = fs.open(dirname);
+   if (!root) {
+     Serial.println("Failed to open directory");
+     return;
+   }
+   if (!root.isDirectory()) {
+     Serial.println("Not a directory");
+     return;
+   }
+ 
+   File file = root.openNextFile();
+   while (file) {
+     if (file.isDirectory()) {
+       Serial.print("  DIR : ");
+       Serial.println(file.name());
+       if (levels) {
+         listDir(fs, file.path(), levels - 1);
+       }
+     } else {
+       Serial.print("  FILE: ");
+       Serial.print(file.name());
+       Serial.print("  SIZE: ");
+       Serial.println(file.size());
+     }
+     file = root.openNextFile();
+   }
+ }
+
 void setup() {
   Serial.begin(115200);
   initWiFi();
@@ -153,7 +189,7 @@ void loop() {
 }
 
 void getLatestCSV(char* latestFileName) {
-    int counter = 0;
+    int counter = 1;
     char candidateFileName[FILE_NAME_MAX_LENGTH + 1];
     char lastFoundFile[FILE_NAME_MAX_LENGTH + 1] = "ERROR"; // set as ERROR just in case
 
