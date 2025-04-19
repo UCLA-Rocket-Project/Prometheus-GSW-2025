@@ -206,7 +206,7 @@ def process_readings(readings: str) -> dict:
 def create_telegraf_string(processed_data: dict) -> str:
     measurement = "avionics_data"
     
-    field_str = ",".join([f"{key}={value}" for key, value in list(processed_data.items())[:-1]])
+    field_str = ",".join([f"{key}={value}" for key, value in processed_data.items()])
     
     return f"{measurement} {field_str} {str(start_time + int(processed_data["time_since_start"]))}"
 
