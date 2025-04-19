@@ -8,6 +8,9 @@
 #define RESET_PIN 14
 #define DIO0_PIN 27
 
+#define STRING_MAX_LENGTH 1024
+#define RSSI_READING_LENGTH 31
+
 void setup() {
   Serial.begin(115200);
   while (!Serial);
@@ -34,8 +37,39 @@ void loop() {
   int packetSize = LoRa.parsePacket();
   if (packetSize) {
     // read packet
-    while (LoRa.available()) {
-      Serial.print((char)LoRa.read());
+    char receivedString[STRING_MAX_LENGTH + RSSI_READING_LENGTH + 1];
+    size_t receivedStringIndex = 0;
+
+    if (LoRa.available()) {
+      receivedString[receivedStringIndex++] = (char)LoRa.read();
+      
+      // stop reading if the received string does not belong to us
+      if (!receivedString[0]) {
+        return;
+      }
+
+      while (LoRa.available() && receivedStringIndex < STRING_MAX_LENGTH) {
+        // if the first character is not an 'A', the string does not belong to us
+        receivedString[receivedStringIndex++] = (char)LoRa.read();
+      }
+
+      // check that the last 2 characters are Z\n, and add
+      if (
+        receivedStringIndex > 2 && 
+        (receivedString[receivedStringIndex - 2] != 'Z' || receivedString[receivedStringIndex - 1] != '\n')
+      ) {
+        return;
+      }
+
+      // append the RSSI strength reading
+      // replace the ' ' in ' Z\n' to append to the string
+
+      receivedString[receivedStringIndex - 3] = '\0';
+      char rssi_reading[RSSI_READING_LENGTH];
+      sprintf(rssi_reading, ",%d Z\n", LoRa.packetRssi());
+
+      strcat(receivedString, rssi_reading);
+      Serial.print(receivedString);
     }
   }
 }
