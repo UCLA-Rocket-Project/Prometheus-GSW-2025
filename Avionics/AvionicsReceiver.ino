@@ -30,6 +30,8 @@ void setup() {
     while (1);
   }
 
+  LoRa.setTxPower(23);
+
   Serial.println("LoRa started successfully");
 }
 void loop() {

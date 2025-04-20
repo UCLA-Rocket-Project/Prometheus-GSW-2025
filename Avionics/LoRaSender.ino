@@ -47,7 +47,7 @@ struct GpsData {
 #define ICM_MOSI 23
 
 Adafruit_ICM20948 icm;
-uint16_t measurement_delay_us = 65535; // Delay between measurements for testing
+uint16_t measurement_delay_us = 20000; // Delay between measurements for testing -- approx 50hz
 
 struct ICMData {
   float accelX;
@@ -141,7 +141,7 @@ void setup()
   }
 
   Serial.println("ICM20948 Found!");
-  // icm.setAccelRange(ICM20948_ACCEL_RANGE_16_G);
+  icm.setAccelRange(ICM20948_ACCEL_RANGE_8_G);
   Serial.print("Accelerometer range set to: ");
   switch (icm.getAccelRange()) {
   case ICM20948_ACCEL_RANGE_2_G:
@@ -243,7 +243,10 @@ void setup()
     while (1);
   }
 
-  Serial.println("LoRa started successfully");
+  // set output power to as high as possible
+  LoRa.setTxPower(23);
+
+  Serial.println("LoRa started successfully, power set to 23");
 
 }
 
@@ -263,7 +266,7 @@ void loop()
 
   writeSensorData(gpsData, icmData, bmpData, timeSinceStart);
   writeToLora(gpsData, icmData, bmpData, timeSinceStart);
-  delay(500);
+  delay(50);
 
 }
 

@@ -172,7 +172,14 @@ void setup() {
   // Handle the download button
   server.on("/download", HTTP_GET, [](AsyncWebServerRequest *request){
     char lastestFileName[FILE_NAME_MAX_LENGTH + 1];
-    getLatestCSV(lastestFileName);
+    // getLatestCSV(lastestFileName);
+
+    // get file for download based on req param
+    if(request->hasArg("download")) {
+      sprintf(latestFileName, (request->arg("download")).c_str());
+    }
+
+
     request->send(SD, lastestFileName, String(), true);
   });
 
