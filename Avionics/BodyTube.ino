@@ -159,7 +159,7 @@ void loop(void)
 //  message += "PT1: " + String(pt1) + " = " + String(v1) + "V\n";
 //  message += "PT2: " + String(pt2) + " = " + String(v2) + "V\n";
 //  message += "PT3: " + String(pt3) + " = " + String(v3) + "V\n";
-  String message = String(pt1) + "," + String(pt2) + "," + String(pt3) + "," + String(v1) + "," + String(v2) + "," + String(v3) + ",";
+  String message = String(pt1) + "," + String(pt2) + "," + String(pt3) + "," + String(v1) + "," + String(v2) + "," + String(v3) + "\n";
 
   //Serial.print(message);
   //Serial.print(message.c_str());
