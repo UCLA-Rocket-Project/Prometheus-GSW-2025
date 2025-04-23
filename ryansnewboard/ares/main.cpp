@@ -6,16 +6,17 @@
 #include <Arduino.h>
 #include <ADS1256.h>
 
+// This is correct pins @Euan
 // Define custom SPI pins for ADS1256 Module
-#define SPI_MISO 37
-#define SPI_SCLK 36
-#define SPI_MOSI 35
-#define SPI_CS  34
+#define SPI_MISO 35
+#define SPI_SCLK 48
+#define SPI_MOSI 34
+#define SPI_CS  36
 
-#define DRDY 38
+#define DRDY 4
 
 // Define LED indicator pin
-#define LED 7
+#define LED 38
 
 SPIClass spi_ads(FSPI); // Create custom SPI instance
 ADS1256 ADC(&spi_ads, DRDY, SPI_CS, 2.5); // Instantiate ADS1256
