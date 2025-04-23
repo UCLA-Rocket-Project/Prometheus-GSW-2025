@@ -99,7 +99,7 @@ void ADS1256::setMUX(uint8_t mux) //Setting MUX (input channel)
 {	
 	writeRegister(MUX_REG, mux);
 	_MUX = mux;
-	delay(200);
+	//deleted delay, Yifan made me do this
 }
 
 void ADS1256::setPGA(uint8_t pga) //Setting PGA (input voltage range)
