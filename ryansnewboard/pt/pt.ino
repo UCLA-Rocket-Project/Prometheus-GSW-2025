@@ -5,10 +5,11 @@
 
 ADS8688 adc;
 
+// CORRECT PINS
 #define MISO 35
 #define SCLK 48
 #define MOSI 34
-#define CS_2 36
+#define CS_1 7
 
 void setup() {
     // Initialize Serial
@@ -20,8 +21,8 @@ void setup() {
     
     // Initialize ADCs
     // NOTE: Change pins later, change back to 0x05 and correct if reading is not correct
-    adc.begin(MISO, SCLK, MOSI, CS_2, 4.1, 0x05);
-    adc.setInputRange(CS_2, 0x05);
+    adc.begin(MISO, SCLK, MOSI, CS_1, 4.1, 0x05);
+    adc.setInputRange(CS_1, 0x05);
 
     Serial.println("End Setup");
 }
@@ -32,7 +33,7 @@ void loop() {
     float calibratedVoltages[8]; // Store calibrated values
 
     // Read PTs from ADC (CS39)
-    adc.readAllChannels(CS_2, true, voltages);
+    adc.readAllChannels(CS_1, true, voltages);
 
     // Apply calibration to PTs
     for (int i = 0; i < 8; i++) {
