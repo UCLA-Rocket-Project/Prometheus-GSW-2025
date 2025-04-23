@@ -9,7 +9,7 @@ ADS8688 adc;
 #define MISO 35
 #define SCLK 48
 #define MOSI 34
-#define CS_1 7
+#define CS_1 36
 
 void setup() {
     // Initialize Serial

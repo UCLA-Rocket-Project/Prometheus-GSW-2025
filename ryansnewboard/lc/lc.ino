@@ -11,7 +11,7 @@
 #define SPI_MISO 35
 #define SPI_SCLK 48
 #define SPI_MOSI 34
-#define SPI_CS  36
+#define SPI_CS  7
 
 #define DRDY 4
 
