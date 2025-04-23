@@ -53,28 +53,32 @@ void setup()
 
     // Set Gain (PGA)
     ADC.setPGA(PGA_64);  // Maximum gain for small signals
-
-    // Set Differential Input Channels (AIN0 - AIN1)
-    ADC.setMUX(DIFF_0_1);  
-
     // Set Sampling Rate
     ADC.setDRATE(DRATE_1000SPS);  
 
     delay(100);
 }
 
-void loop()
-{
-  // Read differential voltage
-  long rawConversion = ADC.readSingleContinuous();    
+void loop() {
+  for (int channel = 0; channel < 2; channel++) {
+    // Set the MUX for the current differential input
+    if (channel == 0){
+      ADC.setMUX(DIFF_0_1);
+    }
+    else {
+      ADC.setMUX(DIFF_2_3);
+    }
+
+    long rawConversion = ADC.readSingle();    
 
   // Convert raw ADC value to voltage
-  float voltageValue = ADC.convertToVoltage(rawConversion) * 1000; 
+    float voltageValue = ADC.convertToVoltage(rawConversion) * 1000; 
 
-  // Convert voltage to weight
-  float weight = convertToWeight(voltageValue);      
+    // Convert voltage to weight
+    float weight = convertToWeight(voltageValue);      
 
-  // Print results
-  Serial.print(String(weight,2));
+    // Print results
+    Serial.print(String(channel) + ": " + String(voltageValue,2) + " ");
+  }
   Serial.println();
-}
+}  
