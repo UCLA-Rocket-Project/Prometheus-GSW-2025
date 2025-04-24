@@ -37,11 +37,13 @@ def writeToCSV(pt_data, writer):
     pt4 = sensor_values[3].split("=")[1]
     pt5 = sensor_values[4].split("=")[1]
     pt6 = sensor_values[5].split("=")[1]
-    lc1 = sensor_values[6].split("=")[1]
-    lc2 = sensor_values[7].split("=")[1]
+    pt7 = sensor_values[6].split("=")[1]  
+    pt8 = sensor_values[7].split("=")[1]  
+    lc1 = sensor_values[8].split("=")[1]
+    lc2 = sensor_values[9].split("=")[1]
     
     # Write data to CSV
-    writer.writerow([pt1, pt2, pt3, pt4, pt5, pt6, lc1, lc2, timestamp])
+    writer.writerow([pt1, pt2, pt3, pt4, pt5, pt6, pt7, pt8, lc1, lc2, timestamp])
 
 def main():
     global flag
@@ -53,7 +55,7 @@ def main():
         
         # Write the header if the file is empty
         if file.tell() == 0:
-            writer.writerow(['pt1', 'pt2', 'pt3', 'pt4', 'pt5', 'pt6', 'lc1', 'lc2', 'timestamp'])
+            writer.writerow(['pt1', 'pt2', 'pt3', 'pt4', 'pt5', 'pt6', 'pt7', 'pt8', 'lc1', 'lc2', 'timestamp'])
         
         # Read the data and stream
         while flag:
