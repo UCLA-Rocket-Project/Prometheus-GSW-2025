@@ -2,6 +2,8 @@
 #include <ADS1256.h>
 #include "ADS8688.h"
 #include <SPI.h>
+#include <WiFi.h>
+#include <PubSubClient.h>
 
 // Load Cell (ADS1256) SPI Pins
 #define ADS1256_MISO 35
@@ -15,6 +17,13 @@
 
 // LED indicator pin
 #define LED 38
+
+// WiFi + MQTT credentials
+const char* ssid = "ILAY";
+const char* password = "lebronpookie123";
+const char* mqtt_server = "192.168.0.103";
+WiFiClient espClient;
+PubSubClient client(espClient);
 
 // SPI bus shared between both ADCs
 SPIClass sharedSPI(FSPI);
@@ -32,6 +41,25 @@ float calibrationB = -91.19858;
 // Convert voltage to weight
 float convertToWeight(float voltage) {
   return (calibrationA * voltage) + calibrationB;
+}
+
+void setup_wifi() {
+  delay(10);
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.println("still connecting...");
+  }
+
+  Serial.println("WiFi connected");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
 }
 
 void setup() {
@@ -54,10 +82,33 @@ void setup() {
   pressureADC.begin(ADS1256_MISO, ADS1256_SCLK, ADS1256_MOSI, ADS8688_CS, 4.1, 0x05);
   pressureADC.setInputRange(ADS8688_CS, 0x05);
 
+  // WiFi + MQTT setup
+  setup_wifi();
+  client.setServer(mqtt_server, 1883);
+
   Serial.println("Setup complete");
 }
 
 void loop() {
+  // Reconnect WiFi if disconnected
+  if (WiFi.status() != WL_CONNECTED) {
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      Serial.println("Reconnecting to Wifi...");
+    }
+  }
+
+  // Reconnect MQTT if needed
+  while (!client.connected()) {
+    if (client.connect("ESP32")) {
+      Serial.println("Connected to MQTT broker");
+    } else {
+      Serial.println("Failed MQTT reconnect");
+      delay(5000);
+    }
+  }
+
   // --- Load Cell Measurements (AIN0-AIN1 & AIN2-AIN3) ---
   float loadVoltages[2];
   loadCellADC.setMUX(DIFF_0_1);
@@ -66,23 +117,29 @@ void loop() {
   loadCellADC.setMUX(DIFF_2_3);
   loadVoltages[1] = loadCellADC.convertToVoltage(loadCellADC.readSingle());
 
-  Serial.print("Load AIN0-1: "); Serial.print(loadVoltages[0], 6); Serial.print(" V\t");
-  Serial.print("AIN2-3: "); Serial.print(loadVoltages[1], 6); Serial.println(" V");
-
   // --- PT Measurements (8 channels) ---
   float ptVoltages[8];
   float ptCalibrated[8];
   pressureADC.readAllChannels(ADS8688_CS, true, ptVoltages);
-
   for (int i = 0; i < 8; i++) {
-    ptCalibrated[i] = 0.5f * ptVoltages[i];
+    ptCalibrated[i] = 0.5f * ptVoltages[i];  // placeholder calibration
   }
 
-  Serial.print("PTs: ");
-  for (int i = 0; i < 7; i++) {
-    Serial.print(ptCalibrated[i], 2); Serial.print(",");
-  }
-  Serial.println(ptCalibrated[7], 2);
+  String storeStr = "Asensorvals pt1=" + String(ptCalibrated[0]) + 
+              ",pt2=" + String(ptCalibrated[1]) + 
+              ",pt3=" + String(ptCalibrated[2]) + 
+              ",pt4=" + String(ptCalibrated[3]) + 
+              ",pt5=" + String(ptCalibrated[4]) + 
+              ",pt6=" + String(ptCalibrated[5]) + 
+              ",pt7=" + String(ptCalibrated[6]) + 
+              ",pt8=" + String(ptCalibrated[7]) +  
+              ",lc1=" + String(loadVoltages[0]) + 
+              ",lc2=" + String(loadVoltages[1]) +
+              ",timestamp=" + String(millis())+ 
+              "Z";
+              
+  Serial.println(storeStr);
+  client.publish("esp32/output", storeStr.c_str());
 
   delay(100);
 }
