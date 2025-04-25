@@ -23,7 +23,7 @@ const char* ssid = "ILAY";
 const char* password = "lebronpookie123";
 const char* mqtt_server = "192.168.0.103";
 WiFiClient espClient;
-PubSubClient client(espClient);
+// PubSubClient client(espClient);
 
 // SPI bus shared between both ADCs
 SPIClass sharedSPI(FSPI);
@@ -35,12 +35,17 @@ ADS1256 loadCellADC(&sharedSPI, ADS1256_DRDY, ADS1256_CS, 2.5);
 ADS8688 pressureADC;
 
 // Calibration coefficients for load cell
-float calibrationA = -195.25664;
-float calibrationB = -91.19858;
-
+float calibrationA1 = -57938.14;
+float calibrationB1 = 1.16948;
 // Convert voltage to weight
-float convertToWeight(float voltage) {
-  return (calibrationA * voltage) + calibrationB;
+float convertToWeightLC1(float voltage) {
+  return (calibrationA1 * voltage) + calibrationB1;
+}
+
+float calibrationA2 = -401428.57;
+float calibrationB2 = -3.46143;
+float convertToWeightLC2(float voltage) {
+  return (calibrationA2 * voltage) + calibrationB2;
 }
 
 void setup_wifi() {
@@ -49,17 +54,17 @@ void setup_wifi() {
   Serial.print("Connecting to ");
   Serial.println(ssid);
 
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
+  // WiFi.mode(WIFI_STA);
+  // WiFi.begin(ssid, password);
 
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.println("still connecting...");
-  }
+  // while (WiFi.status() != WL_CONNECTED) {
+  //   delay(500);
+  //   Serial.println("still connecting...");
+  // }
 
-  Serial.println("WiFi connected");
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
+  // Serial.println("WiFi connected");
+  // Serial.print("IP address: ");
+  // Serial.println(WiFi.localIP());
 }
 
 void setup() {
@@ -82,40 +87,40 @@ void setup() {
   pressureADC.begin(ADS1256_MISO, ADS1256_SCLK, ADS1256_MOSI, ADS8688_CS, 4.1, 0x05);
   pressureADC.setInputRange(ADS8688_CS, 0x05);
 
-  // WiFi + MQTT setup
-  setup_wifi();
-  client.setServer(mqtt_server, 1883);
+  // // WiFi + MQTT setup
+  // setup_wifi();
+  // client.setServer(mqtt_server, 1883);
 
-  Serial.println("Setup complete");
+  // Serial.println("Setup complete");
 }
 
 void loop() {
-  // Reconnect WiFi if disconnected
-  if (WiFi.status() != WL_CONNECTED) {
-    WiFi.begin(ssid, password);
-    while (WiFi.status() != WL_CONNECTED) {
-      delay(500);
-      Serial.println("Reconnecting to Wifi...");
-    }
-  }
+  // // Reconnect WiFi if disconnected
+  // if (WiFi.status() != WL_CONNECTED) {
+  //   WiFi.begin(ssid, password);
+  //   while (WiFi.status() != WL_CONNECTED) {
+  //     delay(500);
+  //     Serial.println("Reconnecting to Wifi...");
+  //   }
+  // }
 
-  // Reconnect MQTT if needed
-  while (!client.connected()) {
-    if (client.connect("ESP32")) {
-      Serial.println("Connected to MQTT broker");
-    } else {
-      Serial.println("Failed MQTT reconnect");
-      delay(5000);
-    }
-  }
+  // // Reconnect MQTT if needed
+  // while (!client.connected()) {
+  //   if (client.connect("ESP32")) {
+  //     Serial.println("Connected to MQTT broker");
+  //   } else {
+  //     Serial.println("Failed MQTT reconnect");
+  //     delay(5000);
+  //   }
+  // }
 
   // --- Load Cell Measurements (AIN0-AIN1 & AIN2-AIN3) ---
   float loadVoltages[2];
   loadCellADC.setMUX(DIFF_0_1);
-  loadVoltages[0] = loadCellADC.convertToVoltage(loadCellADC.readSingle());
+  loadVoltages[0] = convertToWeightLC1(loadCellADC.convertToVoltage(loadCellADC.readSingle()));
 
   loadCellADC.setMUX(DIFF_2_3);
-  loadVoltages[1] = loadCellADC.convertToVoltage(loadCellADC.readSingle());
+  loadVoltages[1] = convertToWeightLC2(loadCellADC.convertToVoltage(loadCellADC.readSingle()));
 
   // --- PT Measurements (8 channels) ---
   float ptVoltages[8];
@@ -133,13 +138,13 @@ void loop() {
               ",pt6=" + String(ptCalibrated[5]) + 
               ",pt7=" + String(ptCalibrated[6]) + 
               ",pt8=" + String(ptCalibrated[7]) +  
-              ",lc1=" + String(loadVoltages[0]) + 
+              ",lc1=" + String(loadVoltages[0],6) + 
               ",lc2=" + String(loadVoltages[1]) +
               ",timestamp=" + String(millis())+ 
               "Z";
               
   Serial.println(storeStr);
-  client.publish("esp32/output", storeStr.c_str());
+  // client.publish("esp32/output", storeStr.c_str());
 
-  delay(100);
+  delay(1000);
 }
