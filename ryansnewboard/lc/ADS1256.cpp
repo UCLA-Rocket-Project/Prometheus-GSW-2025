@@ -480,10 +480,8 @@ void ADS1256::sendDirectCommand(uint8_t directCommand)
 
 float ADS1256::convertToVoltage(int32_t rawData) //Converting the 24-bit data into a voltage value
 {
-//   float voltage = ((2 * _VREF) / 8388608) * rawData / (pow(2, _PGA)); //8388608 = 2^{23} - 1
+  float voltage = ((2 * _VREF) / 8388608) * rawData / (pow(2, _PGA)); //8388608 = 2^{23} - 1
   //REF: p23, Table 16.
-
-  float voltage = ((2.0 * _VREF) / 8388608.0) * rawData / (pow(2, _PGA));
 
   return(voltage);
 }
