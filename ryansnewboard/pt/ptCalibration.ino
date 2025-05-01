@@ -69,7 +69,7 @@ void setup_wifi() {
 
 void setup() {
   Serial.begin(115200);
-  delay(100);
+  delay(1000);
 
   pinMode(LED, OUTPUT);
   digitalWrite(LED, HIGH);
@@ -95,22 +95,18 @@ void setup() {
 }
 
 void loop() {
-  while (Serial.available() == 0) {}
-  String dummy = Serial.readString();
-
-  // --- Load Cell Measurements (AIN0-AIN1 & AIN2-AIN3) ---
-  float loadVoltages[2] = {-1, -1};
-  unsigned long start = millis();
-
-  float sum = 0;
-  int readings = 20;
-  for (int i = 0; i < readings; ++i) {
-    long first = loadCellADC.readDifferentialFaster(DIFF_2_3);
-    loadVoltages[0] = loadCellADC.convertToVoltage(first);
-    sum += loadVoltages[0]*-379916.894-4.6513;
+  // --- PT Measurements (8 channels) ---
+  float ptVoltages[8];
+  float ptCalibrated[8];
+  pressureADC.readAllChannels(ADS8688_CS, true, ptVoltages);
+  for (int i = 0; i < 8; i++) {
+    ptCalibrated[i] = 0.5f * ptVoltages[i];  // placeholder calibration
   }
-  sum /= readings;
-  start = millis();
-  
-  Serial.println(sum, 15);
+
+  for (int i = 0; i < 8; ++i) {
+    Serial.printf("%4.10f,", ptCalibrated[i]);
+  }
+  Serial.println();
+
+  delay(200);
 }

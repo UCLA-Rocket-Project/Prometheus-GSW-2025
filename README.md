@@ -1,6 +1,15 @@
 # Prometheus-GSW-2025
 Code for 2024-2025 Ground Software Systems
 
+## Hotfire 4/30
+
+### Updated library (you have to change both!) (p.s. use this to make Shawn happy)
+* [ADS1256 CPP file](https://github.com/UCLA-Rocket-Project/Prometheus-GSW-2025/blob/main/ryansnewboard/lc/ADS1256.cpp)
+* [ADS1256 Header file](https://github.com/UCLA-Rocket-Project/Prometheus-GSW-2025/blob/main/ryansnewboard/lc/ADS1256.h)
+
+### PT & LC Reader
+* [Full board code](https://github.com/UCLA-Rocket-Project/Prometheus-GSW-2025/blob/main/ryansnewboard/ptandlc/ptandlc.ino)
+
 ## Wifi Test 4/8
 
 ### DAQ 

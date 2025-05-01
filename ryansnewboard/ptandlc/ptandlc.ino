@@ -69,7 +69,7 @@ void setup_wifi() {
 
 void setup() {
   Serial.begin(115200);
-  delay(100);
+  delay(1000);
 
   pinMode(LED, OUTPUT);
   digitalWrite(LED, HIGH);
@@ -80,7 +80,7 @@ void setup() {
   // Initialize ADS1256 (Load Cell)
   loadCellADC.InitializeADC();
   loadCellADC.setPGA(PGA_64);
-  loadCellADC.setMUX(DIFF_0_1);
+  // loadCellADC.setMUX(DIFF_0_1);
   loadCellADC.setDRATE(DRATE_1000SPS);
 
   // Initialize ADS8688 (PTs)
@@ -95,33 +95,6 @@ void setup() {
 }
 
 void loop() {
-  // // Reconnect WiFi if disconnected
-  // if (WiFi.status() != WL_CONNECTED) {
-  //   WiFi.begin(ssid, password);
-  //   while (WiFi.status() != WL_CONNECTED) {
-  //     delay(500);
-  //     Serial.println("Reconnecting to Wifi...");
-  //   }
-  // }
-
-  // // Reconnect MQTT if needed
-  // while (!client.connected()) {
-  //   if (client.connect("ESP32")) {
-  //     Serial.println("Connected to MQTT broker");
-  //   } else {
-  //     Serial.println("Failed MQTT reconnect");
-  //     delay(5000);
-  //   }
-  // }
-
-  // --- Load Cell Measurements (AIN0-AIN1 & AIN2-AIN3) ---
-  float loadVoltages[2];
-  loadCellADC.setMUX(DIFF_0_1);
-  loadVoltages[0] = convertToWeightLC1(loadCellADC.convertToVoltage(loadCellADC.readSingle()));
-
-  loadCellADC.setMUX(DIFF_2_3);
-  loadVoltages[1] = convertToWeightLC2(loadCellADC.convertToVoltage(loadCellADC.readSingle()));
-
   // --- PT Measurements (8 channels) ---
   float ptVoltages[8];
   float ptCalibrated[8];
@@ -130,21 +103,16 @@ void loop() {
     ptCalibrated[i] = 0.5f * ptVoltages[i];  // placeholder calibration
   }
 
-  String storeStr = "Asensorvals pt1=" + String(ptCalibrated[0]) + 
-              ",pt2=" + String(ptCalibrated[1]) + 
-              ",pt3=" + String(ptCalibrated[2]) + 
-              ",pt4=" + String(ptCalibrated[3]) + 
-              ",pt5=" + String(ptCalibrated[4]) + 
-              ",pt6=" + String(ptCalibrated[5]) + 
-              ",pt7=" + String(ptCalibrated[6]) + 
-              ",pt8=" + String(ptCalibrated[7]) +  
-              ",lc1=" + String(loadVoltages[0],6) + 
-              ",lc2=" + String(loadVoltages[1]) +
-              ",timestamp=" + String(millis())+ 
-              "Z";
-              
-  Serial.println(storeStr);
-  // client.publish("esp32/output", storeStr.c_str());
+  float loadCell[2] = {-1, -1};
 
-  delay(1000);
+  loadCell[0] = loadCellADC.convertToVoltage(loadCellADC.readDifferentialFaster(DIFF_0_1));
+  loadCell[1] = loadCellADC.convertToVoltage(loadCellADC.readDifferentialFaster(DIFF_2_3));
+
+
+  for (int i = 0; i < 8; ++i) {
+    Serial.printf("%4.10f,", ptCalibrated[i]);
+  }
+  Serial.printf("%4.10f,%4.10f\n", loadCell[0], loadCell[1]);
+
+  delay(10); // can comment this out during the actual test rocket for even faster data rates
 }
