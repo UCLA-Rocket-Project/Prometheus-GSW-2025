@@ -75,7 +75,9 @@ void ADS1256::InitializeADC()
 
 void ADS1256::waitForDRDY()
 {		
+	// Serial.println("Waiting...");
 	while (digitalRead(_DRDY_pin) == HIGH) {}	
+	// Serial.println("Done waiting...");
 }
 
 void ADS1256::stopConversion() //Sending SDATAC to stop the continuous conversion
@@ -478,9 +480,11 @@ void ADS1256::sendDirectCommand(uint8_t directCommand)
 
 float ADS1256::convertToVoltage(int32_t rawData) //Converting the 24-bit data into a voltage value
 {
-  float voltage = ((2 * _VREF) / 8388608) * rawData / (pow(2, _PGA)); //8388608 = 2^{23} - 1
+//   float voltage = ((2 * _VREF) / 8388608) * rawData / (pow(2, _PGA)); //8388608 = 2^{23} - 1
   //REF: p23, Table 16.
-	
+
+  float voltage = ((2.0 * _VREF) / 8388608.0) * rawData / (pow(2, _PGA));
+
   return(voltage);
 }
 
@@ -773,7 +777,8 @@ long ADS1256::readDifferentialFaster(uint8_t comp_channel) {
 	_spi->transfer(0x50 | 1); // 0x50 = WREG //1 = MUX
 	_spi->transfer(0x00);
 	_spi->transfer(comp_channel);  //AIN0+AIN1
-	
+
+	delay(3); // this seems to be the minimum delay required to switch the mux properly
 	
 	_spi->transfer(0b11111100); //SYNC
 	delayMicroseconds(13); // 24 * 1/(SPI_FREQ) -> t11
@@ -781,17 +786,20 @@ long ADS1256::readDifferentialFaster(uint8_t comp_channel) {
 	delayMicroseconds(13); // 24 * 1/(SPI_FREQ) -> t11
 	
 	_spi->transfer(0b00000001); //Issue RDATA (0000 0001) command
-	delayMicroseconds(27); // Wait t6 time (~6.51 us) REF: P34, FIG:30, 50 * 1/(SPI_FREQ)
+	delayMicroseconds(100); // Wait t6 time (~6.51 us) REF: P34, FIG:30, 50 * 1/(SPI_FREQ)
 	waitForDRDY(); // I dont think we need this, but just in case
 	
 	_outputBuffer[0] = _spi->transfer(0); // MSB 
 	_outputBuffer[1] = _spi->transfer(0); // Mid-byte
 	_outputBuffer[2] = _spi->transfer(0); // LSB
+
 	
 	_outputValue = ((long)_outputBuffer[0]<<16) | ((long)_outputBuffer[1]<<8) | (_outputBuffer[2]);
 	_outputValue = convertSigned24BitToLong(_outputValue);
 	
 	digitalWrite(_CS_pin, HIGH); // bring back the CS pin to high after completing readings, to deselect the chip
+	_spi->endTransaction();
+
 
 	return _outputValue;
 }
