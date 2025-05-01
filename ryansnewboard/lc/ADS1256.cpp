@@ -762,3 +762,36 @@ long ADS1256::cycleDifferential()
 }
 
 
+// ref: pg 21, Settling time using the input multiplexer + figure 19
+long ADS1256::readDifferentialFaster(uint8_t comp_channel) {
+	waitForDRDY();
+
+	_spi->beginTransaction(SPISettings(1920000, MSBFIRST, SPI_MODE1));
+
+	digitalWrite(_CS_pin, LOW); //CS must stay LOW during the entire sequence [Ref: P34, T24]
+
+	_spi->transfer(0x50 | 1); // 0x50 = WREG //1 = MUX
+	_spi->transfer(0x00);
+	_spi->transfer(comp_channel);  //AIN0+AIN1
+	
+	
+	_spi->transfer(0b11111100); //SYNC
+	delayMicroseconds(13); // 24 * 1/(SPI_FREQ) -> t11
+	_spi->transfer(0b11111111); //WAKEUP
+	delayMicroseconds(13); // 24 * 1/(SPI_FREQ) -> t11
+	
+	_spi->transfer(0b00000001); //Issue RDATA (0000 0001) command
+	delayMicroseconds(27); // Wait t6 time (~6.51 us) REF: P34, FIG:30, 50 * 1/(SPI_FREQ)
+	waitForDRDY(); // I dont think we need this, but just in case
+	
+	_outputBuffer[0] = _spi->transfer(0); // MSB 
+	_outputBuffer[1] = _spi->transfer(0); // Mid-byte
+	_outputBuffer[2] = _spi->transfer(0); // LSB
+	
+	_outputValue = ((long)_outputBuffer[0]<<16) | ((long)_outputBuffer[1]<<8) | (_outputBuffer[2]);
+	_outputValue = convertSigned24BitToLong(_outputValue);
+	
+	digitalWrite(_CS_pin, HIGH); // bring back the CS pin to high after completing readings, to deselect the chip
+
+	return _outputValue;
+}

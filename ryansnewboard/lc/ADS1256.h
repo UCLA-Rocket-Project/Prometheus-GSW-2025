@@ -142,6 +142,8 @@ public:
 	//Stop AD
 	void stopConversion();
 	
+	// EXTRA: self implemented functions
+	long readDifferentialFaster(uint8_t comp_channel);
 private:
 
 	void waitForDRDY(); // Block until DRDY is low
