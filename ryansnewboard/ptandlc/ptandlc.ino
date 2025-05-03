@@ -21,9 +21,9 @@
 // WiFi + MQTT credentials
 const char* ssid = "ILAY";
 const char* password = "lebronpookie123";
-const char* mqtt_server = "192.168.0.103";
+const char* mqtt_server = "192.168.0.101";
 WiFiClient espClient;
-// PubSubClient client(espClient);
+PubSubClient client(espClient);
 
 // SPI bus shared between both ADCs
 SPIClass sharedSPI(FSPI);
@@ -54,17 +54,17 @@ void setup_wifi() {
   Serial.print("Connecting to ");
   Serial.println(ssid);
 
-  // WiFi.mode(WIFI_STA);
-  // WiFi.begin(ssid, password);
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
 
-  // while (WiFi.status() != WL_CONNECTED) {
-  //   delay(500);
-  //   Serial.println("still connecting...");
-  // }
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.println("still connecting...");
+  }
 
-  // Serial.println("WiFi connected");
-  // Serial.print("IP address: ");
-  // Serial.println(WiFi.localIP());
+  Serial.println("WiFi connected");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
 }
 
 void setup() {
@@ -88,10 +88,10 @@ void setup() {
   pressureADC.setInputRange(ADS8688_CS, 0x05);
 
   // // WiFi + MQTT setup
-  // setup_wifi();
-  // client.setServer(mqtt_server, 1883);
+  setup_wifi();
+  client.setServer(mqtt_server, 1883);
 
-  // Serial.println("Setup complete");
+  Serial.println("Setup complete");
 }
 
 void loop() {
@@ -105,14 +105,40 @@ void loop() {
 
   float loadCell[2] = {-1, -1};
 
-  loadCell[0] = loadCellADC.convertToVoltage(loadCellADC.readDifferentialFaster(DIFF_0_1));
-  loadCell[1] = loadCellADC.convertToVoltage(loadCellADC.readDifferentialFaster(DIFF_2_3));
+  loadCell[0] = -58439.4371*loadCellADC.convertToVoltage(loadCellADC.readDifferentialFaster(DIFF_0_1))+1.19746;
+  loadCell[1] = -395379.263*loadCellADC.convertToVoltage(loadCellADC.readDifferentialFaster(DIFF_2_3))+27.13879;
 
 
-  for (int i = 0; i < 8; ++i) {
-    Serial.printf("%4.10f,", ptCalibrated[i]);
+  char finalStr[300];
+  sprintf(
+    finalStr,
+    "A %4.10f,%4.10f,%4.10f,%4.10f,%4.10f,%4.10f,%4.10f,%4.10f,"
+    "%4.10f,%4.10f"
+    "%l Z\n",
+    ptCalibrated[0],
+    ptCalibrated[1],
+    ptCalibrated[2],
+    ptCalibrated[3],
+    ptCalibrated[4],
+    ptCalibrated[5],
+    ptCalibrated[6],
+    ptCalibrated[7],
+    loadCell[0], 
+    loadCell[1],
+    millis()
+  );
+
+  while (!client.connected()) {
+    if (client.connect("ESP32")) {
+        Serial.println("Reconnected to MQTT broker");
+    } else {
+        Serial.println("Failed to reconnect to MQTT broker");
+        delay(5000);  // Wait before retrying
+    }
   }
-  Serial.printf("%4.10f,%4.10f\n", loadCell[0], loadCell[1]);
+  
+  client.publish("esp32/output", finalStr);
 
-  delay(10); // can comment this out during the actual test rocket for even faster data rates
+  Serial.println(finalStr);
+
 }
