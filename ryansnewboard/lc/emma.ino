@@ -6,23 +6,22 @@
 #include <Arduino.h>
 #include <ADS1256.h>
 
-#include <Adafruit_ADS1X15.h>
 #include <Wire.h>
 #include <SPI.h>
 #include <SD.h>
 #include <FS.h>
 
-// This is correct pins @Euan
 // Define custom SPI pins for ADS1256 Module
-#define SPI_MISO 13
-#define SPI_SCLK 12
-#define SPI_MOSI 11
-#define SPI_CS  10
+#define ADS_MISO 13
+#define ADS_SCK 12
+#define ADS_MOSI 11
+#define ADS_CS  10
 
 #define DRDY 4
 
-SPIClass spi_ads(FSPI); // Create custom SPI instance
-ADS1256 ADC(&spi_ads, DRDY, SPI_CS, 2.5); // Instantiate ADS1256
+SPIClass custom_spi; // Create custom SPI instance
+//SPIClass custom_spi(FSPI); // Create custom SPI instance
+ADS1256 ADC(&custom_spi, DRDY, ADS_CS, 2.5); // Instantiate ADS1256
 
 // Calibration coefficients y=Ax+B
 float calibrationA = -195.25664;
@@ -35,10 +34,10 @@ float convertToWeight(float voltage) {
 }
 
 // SPI pins for SD card on HSPI
-#define SD_HSCK   12  // Replace with your HSCK pin
-#define SD_HMISO  13  // Replace with your HMISO pin
-#define SD_HMOSI  11  // Replace with your HMOSI pin
-#define SD_CS_XTSD    6  // Replace with your CS_XTSD pin
+#define SD_SCK   12  // Replace with your HSCK pin
+#define SD_MISO  13  // Replace with your HMISO pin
+#define SD_MOSI  11  // Replace with your HMOSI pin
+#define SD_CS    6  // Replace with your CS_XTSD pin
 
 String filename;
 
@@ -48,7 +47,7 @@ String makeFile() {
 
   // Look for the first filename that does NOT exist
   while (true) {
-    path = "/launch" + String(index) + ".txt";
+    path = "/data" + String(index) + ".txt";
     if (!SD.exists(path)) {
       break;
     }
@@ -112,12 +111,31 @@ void setup()
     delay(100);
 
     // Configure SPI pins
-    pinMode(SPI_MISO, INPUT_PULLUP);
-    pinMode(SPI_SCLK, OUTPUT);
-    pinMode(SPI_MOSI, OUTPUT);
+    pinMode(ADS_MISO, INPUT_PULLUP);
+    pinMode(ADS_SCK, OUTPUT);
+    pinMode(ADS_MOSI, OUTPUT);
+
+    Serial.print("Initializing SD card...");
 
     // Initialize the SPI bus with custom pins
-    spi_ads.begin(SPI_SCLK, SPI_MISO, SPI_MOSI, SPI_CS);
+    custom_spi.begin(SD_SCK, SD_MISO, SD_MOSI, -1);
+
+    // setup and write to the SD Card
+    if (!SD.begin(SD_CS, &custom_spi)) {
+        Serial.println("Failed to initialize SD card");
+        while(1);
+    }
+
+    Serial.println("SD initialization done.");
+    filename = makeFile();
+    writeFile(SD, filename.c_str(), "TESTING\n");
+
+    // setup and write to the ADS1256
+    custom_spi.begin(ADS_SCK, ADS_MISO, ADS_MOSI, -1);
+    if (!custom_spi.begin(ADS_CS, &custom_spi)) {
+        Serial.println("Failed to initialize ADS SPI");
+        while(1);
+    }
 
     // ADC Setup
     ADC.InitializeADC(); 
@@ -132,31 +150,6 @@ void setup()
     ADC.setDRATE(DRATE_1000SPS);  
 
     delay(100);
-
-    
-  Serial.print("Initializing SD card...");
-
-  bool sd_init = false;
-  while (!sd_init) {
-    SPI.begin(SD_HSCK, SD_HMISO, SD_HMOSI, SD_CS_XTSD);
-    sd_init = SD.begin(SD_CS_XTSD);
-//    if (!sd_init) {
-//      Serial.println("initialization failed!");
-//    }
-//    if (!SD.begin()) {
-//      Serial.println("initialization still failed!");
-//    }
-    if (!sd_init) {
-    Serial.println("Waiting for SD card... Insert card now.");
-    delay(1000); // wait and retry
-    }
-  }
-
-
-  Serial.println("SD initialization done.");
-  filename = makeFile();
-  writeFile(SD, filename.c_str(), "TESTING\n");
-
 }
 
 void loop() {

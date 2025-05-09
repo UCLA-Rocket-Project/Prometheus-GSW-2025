@@ -2,7 +2,6 @@
 #include <Wire.h>
 #include <SPI.h>
 #include <SD.h>
-#include <SPI.h>
 #include <FS.h>
 
 // SPI pins for SD card on HSPI
