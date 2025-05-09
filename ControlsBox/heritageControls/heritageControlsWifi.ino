@@ -9,19 +9,18 @@
 #define dump 21
 #define vent 19
 #define qd 18
-#define purge 5
-#define mpv 4
-#define ignite 15 //15
+#define mpv 5
+#define ignite 4 //15
 #define abortSiren 23
 #define abortValve 13  //13
 unsigned long long delay_time = 250;
 unsigned long long last_time = 0;
 
 // Replace the next variables with your SSID/Password combination
-const char* ssid = "GreenGuppy";
-const char* password = "lebron123";
+const char* ssid = "ILAY";
+const char* password = "lebronpookie123";
 // Add your MQTT Broker IP address, example:
-const char* mqtt_server = "172.20.10.10";
+const char* mqtt_server = "192.168.0.102";
 // run `ipconfig getifaddr en0` in your macbook terminal
 const char* SWITCHBOX_TOPIC = "switchbox/commands";
 
@@ -50,6 +49,7 @@ void setup_wifi() {
 }
 
 void callback(char *topic, byte *payload, unsigned int length) {
+
     Serial.println("received!");
     char received = (char)payload[0];
 
@@ -69,24 +69,28 @@ void callback(char *topic, byte *payload, unsigned int length) {
         }
 
     const char ACTUATED = '1';
+
+    const short ABORT_VALVE_SWITCH = 0;
+    const short QD_SWITCH = 1;
+    const short VENT_SWITCH = 2;
+    const short IGNITE_SWITCH = 3;
     const short PURGE_SWITCH = 4;
     const short FILL_SWITCH = 5;
-    const short ABORT_SIREN_SWITCH = 9;
     const short DUMP_SWITCH = 6;
-    const short VENT_SWITCH = 2;
-    const short QD_SWITCH = 1;
-    const short IGNITE_SWITCH = 3;
+    const short HEATPAD_SWITCH = 7;
     const short MPV_SWITCH = 8;
-    const short OUTLET_SWITCH = 7;
-    const short ABORT_VALVE_SWITCH = 0;
+    const short ABORT_SIREN_SWITCH = 9;
+
+
+
 
     if(message[FILL_SWITCH] == ACTUATED){
         Serial.println("FILL Command: ON");
-        digitalWrite(fill, LOW);
+        digitalWrite(fill, HIGH);
     }
     if(message[FILL_SWITCH] == '0'){
         Serial.println("FILL Command: OFF");
-        digitalWrite(fill, HIGH);
+        digitalWrite(fill, LOW);
     }
 
     if(message[ABORT_SIREN_SWITCH] == ACTUATED){
@@ -100,38 +104,38 @@ void callback(char *topic, byte *payload, unsigned int length) {
 
     if(message[DUMP_SWITCH] == ACTUATED){
         Serial.println("DUMP Command: ON");
-        digitalWrite(dump, LOW);
+        digitalWrite(dump, HIGH);
     }
     if(message[DUMP_SWITCH] == '0'){
         Serial.println("DUMP Command: OFF");
-        digitalWrite(dump, HIGH);
+        digitalWrite(dump, LOW);
     }
 
     if(message[VENT_SWITCH] == ACTUATED){
         Serial.println("VENT Command: ON");
-        digitalWrite(vent, LOW);
+        digitalWrite(vent, HIGH);
     }
     if(message[VENT_SWITCH] == '0'){
         Serial.println("VENT Command: OFF");
-        digitalWrite(vent, HIGH);
+        digitalWrite(vent, LOW);
     }
 
-    if(message[PURGE_SWITCH] == ACTUATED){
-        Serial.println("PURGE Command: ON");
-        digitalWrite(purge, LOW);
-    }
-    if(message[PURGE_SWITCH] == '0'){
-        Serial.println("PURGE Command: OFF");
-        digitalWrite(purge, HIGH);
-    }
+    // if(message[PURGE_SWITCH] == ACTUATED){
+    //     Serial.println("PURGE Command: ON");
+    //     digitalWrite(purge, HIGH);
+    // }
+    // if(message[PURGE_SWITCH] == '0'){
+    //     Serial.println("PURGE Command: OFF");
+    //     digitalWrite(purge, LOW);
+    // }
 
     if(message[QD_SWITCH] == ACTUATED){
         Serial.println("QD Command: ON");
-        digitalWrite(qd, LOW);
+        digitalWrite(qd, HIGH);
     }
     if(message[QD_SWITCH] == '0'){
         Serial.println("QD Command: OFF");
-        digitalWrite(qd, HIGH);
+        digitalWrite(qd, LOW);
     }
 
     if(message[IGNITE_SWITCH] == ACTUATED){
@@ -145,32 +149,32 @@ void callback(char *topic, byte *payload, unsigned int length) {
 
     if(message[MPV_SWITCH] == ACTUATED){
         Serial.println("MPV Command: ON");
-        digitalWrite(mpv, LOW);
+        digitalWrite(mpv, HIGH);
     }
     if(message[MPV_SWITCH] == '0'){
         Serial.println("MPV Command: OFF");
-        digitalWrite(mpv, HIGH);
+        digitalWrite(mpv, LOW);
     }
 
-    if(message[OUTLET_SWITCH] == ACTUATED){
-        Serial.println("OUTLET Command: ON");
-        digitalWrite(outlet, LOW);
-    }
-    if(message[OUTLET_SWITCH] == '0'){
-        Serial.println("OUTLET Command: OFF");
-        digitalWrite(outlet, HIGH);
-    }
+    // if(message[OUTLET_SWITCH] == ACTUATED){
+    //     Serial.println("OUTLET Command: ON");
+    //     digitalWrite(outlet, HIGH);
+    // }
+    // if(message[OUTLET_SWITCH] == '0'){
+    //     Serial.println("OUTLET Command: OFF");
+    //     digitalWrite(outlet, LOW);
+    // }
 
     if(message[ABORT_VALVE_SWITCH] == ACTUATED) {
         Serial.println("ABORT VALVE Command: ON -- EMERGENCY SHUTDOWN");
         digitalWrite(ignite, LOW);
-        digitalWrite(fill, HIGH);
-        digitalWrite(vent, HIGH);
-        digitalWrite(dump, HIGH);
-        digitalWrite(qd, HIGH);
-        digitalWrite(mpv, HIGH);
-        digitalWrite(purge, HIGH);
-        digitalWrite(abortValve, HIGH);
+        digitalWrite(fill, LOW);
+        digitalWrite(vent, LOW);
+        digitalWrite(dump, LOW);
+        digitalWrite(qd, LOW);
+        digitalWrite(mpv, LOW);
+        // digitalWrite(purge, LOW);
+        digitalWrite(abortValve, LOW);
     }
 
     if(message[ABORT_VALVE_SWITCH] == '0'){
@@ -184,7 +188,7 @@ void callback(char *topic, byte *payload, unsigned int length) {
 
 void connect_client() {
   while (!client.connected()) {
-    if (client.connect("ESP32")) {
+    if (client.connect("ESP32_SWITCHBOX")) {
         client.subscribe(SWITCHBOX_TOPIC);
         Serial.println("Reconnected to MQTT broker");
     } else {
@@ -209,19 +213,19 @@ void setup() {
   pinMode(dump, OUTPUT);
   pinMode(qd, OUTPUT);
   pinMode(mpv, OUTPUT);
-  pinMode(purge, OUTPUT);
+  // pinMode(purge, OUTPUT);
   pinMode(outlet, OUTPUT);
   pinMode(abortValve, OUTPUT);
 
   digitalWrite(abortSiren, LOW);//off
   digitalWrite(ignite, LOW);//off
-  digitalWrite(fill, HIGH);//closed
-  digitalWrite(vent, HIGH);//open
-  digitalWrite(dump, HIGH);//open
-  digitalWrite(qd, HIGH);//open
-  digitalWrite(mpv, HIGH);
-  digitalWrite(purge, HIGH);//closed
-  digitalWrite(outlet, HIGH);//closed
+  digitalWrite(fill, LOW);//closed
+  digitalWrite(vent, LOW);//open
+  digitalWrite(dump, LOW);//open
+  digitalWrite(qd, LOW);//open
+  digitalWrite(mpv, LOW);
+  // digitalWrite(purge, LOW);//closed
+  digitalWrite(outlet, LOW);//closed
   digitalWrite(abortValve, LOW);//closed
 
   //wifi code
@@ -240,25 +244,33 @@ void setup() {
 }
 
 void loop() {
-  while (!client.connected() && millis() - last_time > 1000){
-    connect_client();
+  if (WiFi.status() != WL_CONNECTED) {
+      Serial.println("Network disconnection detected");
 
-    Serial.println("Unavailable...");
-     if (millis() - last_time > 10000){
-       digitalWrite(abortSiren, HIGH);
+      WiFi.mode(WIFI_STA);
+      WiFi.begin(ssid, password);
+      delay(500);
+      unsigned long long disconnect_start = millis();
+
+      while (WiFi.status() != WL_CONNECTED) {
+        if((millis() - disconnect_start) > 20000) {
+          Serial.println("Disconnected for 20s EMERGENCY SHUTDOWN");
+          digitalWrite(ignite, LOW);
+          digitalWrite(fill, LOW);
+          digitalWrite(vent, LOW);
+          digitalWrite(dump, LOW);
+          digitalWrite(qd, LOW);
+          digitalWrite(mpv, LOW);
+          // digitalWrite(purge, LOW);
+          digitalWrite(abortValve, LOW);
+        }
+        Serial.println("Reconnecting to Wifi...");
+        delay(250);
+      }
     }
-    if (millis() - last_time > 20000){
-      Serial.println("Aborted...");
-      digitalWrite(ignite, LOW);
-      digitalWrite(fill, HIGH);
-      digitalWrite(vent, HIGH);
-      digitalWrite(dump, HIGH);
-      digitalWrite(qd, HIGH);
-      digitalWrite(mpv, HIGH);
-      digitalWrite(purge, HIGH);
-      digitalWrite(ignite, LOW);
-      digitalWrite(abortValve, LOW);
-    }
+  
+  if (!client.connected() && millis() - last_time > 1000){
+    connect_client();
   }
 
   client.loop();
