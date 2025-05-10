@@ -45,10 +45,16 @@
  
  //Uncomment and set up if you want to use custom pins for the SPI communication
  #define REASSIGN_PINS
- int sck = 14;
- int miso = 12;
- int mosi = 13;
- int cs = 15;
+//  int sck = 14;
+//  int miso = 12;
+//  int mosi = 13;
+//  int cs = 15;
+
+ // emma's board
+ int sck = 12;
+ int miso = 13;
+ int mosi = 11;
+ int cs = 6;
  
  
  void listDir(fs::FS &fs, const char *dirname, uint8_t levels) {
@@ -167,6 +173,27 @@
      Serial.println("Delete failed");
    }
  }
+
+ void deleteAllFiles(fs::FS &fs) {
+   Serial.printf("Deleting all files");
+   File root = fs.open("/");
+   File file = root.openNextFile();
+   while (file) {
+    String name = "/" + String(file.name());
+    if (file.isDirectory()) {
+      Serial.print(name);
+      Serial.print("is not a file");
+      Serial.println();
+    }
+    else {
+      Serial.print("  FILE: ");
+      Serial.print(name);
+      Serial.println();
+      deleteFile(fs, name.c_str());
+    }
+    file = root.openNextFile();
+   }
+ }
  
  void testFileIO(fs::FS &fs, const char *path) {
    File file = fs.open(path);
@@ -248,7 +275,7 @@
    uint64_t cardSize = SD.cardSize() / (1024 * 1024);
    Serial.printf("SD Card Size: %lluMB\n", cardSize);
  
-   listDir(SD, "/", 0);
+  //  listDir(SD, "/", 0);
  //  createDir(SD, "/mydir");
  //  listDir(SD, "/", 0);
  //  removeDir(SD, "/mydir");
@@ -256,7 +283,7 @@
  //  writeFile(SD, "/hello.txt", "Hello ");
  //  appendFile(SD, "/test.txt", "FINISHED!\n");
  //  readFile(SD, "/foo.txt");
-   readFile(SD, "/test.txt");
+  //  readFile(SD, "/test.txt");
  //  deleteFile(SD, "/foo.txt");
  //  renameFile(SD, "/hello.txt", "/foo.txt");
  //  readFile(SD, "/foo.txt");
@@ -265,4 +292,36 @@
  //  Serial.printf("Used space: %lluMB\n", SD.usedBytes() / (1024 * 1024));
  }
  
- void loop() {}
+ void loop() {
+
+  Serial.println("Enter Instruction:");
+  while (Serial.available() == 0) {}     //wait for data available
+  String inst = Serial.readString();  //read until timeout
+  inst.trim();                        // remove any \r \n whitespace at the end of the String
+  if (inst == "list") {
+    Serial.println("Listing ...");
+    listDir(SD, "/", 0);
+  } 
+  else if (inst == "read") {
+    Serial.println("Reading ...");
+    Serial.println("Enter Filename to Read: ");
+    while (Serial.available() == 0) {}     //wait for data available
+    String filen = "/" + Serial.readString();
+    readFile(SD, filen.c_str());
+  }
+  else if (inst == "delete") {
+    Serial.println("Deleting ...");
+    Serial.println("Enter Filename to Delete: ");
+    while (Serial.available() == 0) {}     //wait for data available
+    String filen = "/" + Serial.readString();
+    deleteFile(SD, filen.c_str());
+  }
+  else if (inst == "delete-all") {
+    Serial.println("Deleting All ...");
+    deleteAllFiles(SD);
+  }
+  else {
+    Serial.println("Not a valid instruction");
+  }
+
+ }
