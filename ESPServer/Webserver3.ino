@@ -8,8 +8,8 @@
 #include <WiFiUdp.h>
 
 // Replace with your network credentials
-const char* ssid = "ILAY";
-const char* password = "lebronpookie123";
+const char* ssid = "GreenGuppy";
+const char* password = "lebron123";
 
 #define FILE_NAME_MAX_LENGTH 100
 #define CSV_ENTRY_MAX_LENGTH 1024
@@ -19,10 +19,17 @@ char newFileName[FILE_NAME_MAX_LENGTH];
 // Create AsyncWebServer object on port 80
 AsyncWebServer server(80);
 
-#define SD_HSCK   12  // Replace with your HSCK pin
-#define SD_HMISO  13  // Replace with your HMISO pin
-#define SD_HMOSI  11  // Replace with your HMOSI pin
-#define SD_CS_XTSD    6  // Replace with your CS_XTSD pin
+File downloadFile;
+
+// #define SD_HSCK   12  // Replace with your HSCK pin
+// #define SD_HMISO  13  // Replace with your HMISO pin
+// #define SD_HMOSI  11  // Replace with your HMOSI pin
+// #define SD_CS_XTSD    6  // Replace with your CS_XTSD pin
+
+#define SD_HSCK 14
+#define SD_CS_XTSD 15
+#define SD_HMOSI 13
+#define SD_HMISO 12
 
 SPIClass spi;
 
@@ -208,20 +215,50 @@ void setup() {
         request->send(200, "text/html", list);
     });
 
-    server.on("/download-file", HTTP_GET, [](AsyncWebServerRequest *request) {
-      if (request->hasParam("fileName") && request->hasParam("extensionType")) {
-          char fileName[100];
-          snprintf(fileName, 100, request->getParam("fileName")->value().c_str());
-          char extension[50];
-          snprintf(extension, 50, request->getParam("extensionType")->value().c_str());
-
-          char finalFileNamePlusExtension[150];
-          sprintf(finalFileNamePlusExtension, "/%s.%s", fileName, extension);
-          Serial.printf("Received: %s\n", finalFileNamePlusExtension);
-          request->send(SD, finalFileNamePlusExtension, String(), true);
+    server.on("/download-chunked", HTTP_GET, [](AsyncWebServerRequest *request) {
+      if (!request->hasParam("fileName")) {
+        request->send(200, "text/plain", "welp");
+        return;
       }
-      
-      request->send(200, "text/plain", "Please specify a file name!");
+
+      String filename = "/" + request->getParam("fileName")->value() + ".txt";
+      if (!SD.exists(filename)) {
+        request->send(404, "text/plain", "File not found");
+      }
+
+      downloadFile = SD.open(filename, FILE_READ);
+      size_t fileSize = downloadFile.size();
+      String fileSizeString = String(fileSize);
+
+      AsyncWebServerResponse* response = request->beginChunkedResponse("text/plain", [fileSize](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
+        Serial.printf("%u / %u\n", index, fileSize);
+
+        if (fileSize <= index) {
+          Serial.println("finished");
+          return 0;
+        }
+        
+        const int chunkSize = min(maxLen, fileSize - index);
+        char* fileReadBuffer = (char* )malloc(sizeof(char) * chunkSize);
+
+        if (fileReadBuffer == NULL) {
+          return 0;
+        }
+
+        downloadFile.readBytes(fileReadBuffer, chunkSize);
+        memcpy(buffer, fileReadBuffer, chunkSize);
+        free(fileReadBuffer);
+        fileReadBuffer = NULL;
+
+        Serial.printf("Sending %u\n", chunkSize);
+
+        return chunkSize;
+      });
+
+      response->addHeader(asyncsrv::T_Cache_Control, "public,max-age=60");
+      response->addHeader(asyncsrv::T_ETag, fileSizeString);
+
+      request->send(response);
     });
 
   server.begin();
