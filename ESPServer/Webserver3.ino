@@ -60,10 +60,10 @@ void initSDCard(SPIClass& spi){
   uint64_t cardSize = SD.cardSize() / (1024 * 1024);
   Serial.printf("SD Card Size: %lluMB\n", cardSize);
 
-//  writeFile(SD, "/data0.csv", "HI,bye,there\n");
-//  writeFile(SD, "/data1.csv", "HI,bye,there\n");
+ writeFile(SD, "/data0.csv", "HI,bye,there\n");
+ writeFile(SD, "/data1.csv", "HI,bye,there\n");
 //  writeFile(SD, "/data2.csv", "HI,bye,there\n");
-//  appendFile(SD, "/data.csv", "1,2,3\n");
+ appendFile(SD, "/data0.csv", "1,2,3\n");
   listDir(SD, "/", 0);
 }
 
@@ -108,6 +108,24 @@ void deleteFile(fs::FS &fs, const char * path){
     Serial.println("- file deleted");
   } else {
     Serial.println("- delete failed");
+  }
+}
+
+void clearAllFiles(fs::FS &fs) {
+  File root = fs.open("/", FILE_READ);
+
+  if (!root) {
+    Serial.println("Failed to open directory");
+    return;
+  }
+  
+  File file = root.openNextFile();
+  while (file) {
+    Serial.printf("Deleting: %s\n", file.name());
+    char fileName[30];
+    snprintf(fileName, 30, "/%s", file.name());
+    deleteFile(fs, fileName);
+    file = root.openNextFile();
   }
 }
 
@@ -259,6 +277,16 @@ void setup() {
       response->addHeader(asyncsrv::T_ETag, fileSizeString);
 
       request->send(response);
+    });
+
+    server.on("/delete-all-files", HTTP_GET, [](AsyncWebServerRequest* req) {
+      if (!req->hasParam("password") || req->getParam("password")->value() != "juanmygoat") {
+        req->send(400, "You dont have the permissions to do this");
+        return;
+      }
+
+      clearAllFiles(SD);
+      req->send(200, "All files deleted");
     });
 
   server.begin();
