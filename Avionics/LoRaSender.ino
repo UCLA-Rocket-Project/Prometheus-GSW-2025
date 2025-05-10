@@ -24,6 +24,8 @@
 #define CS_PIN 33
 #define RESET_PIN 27
 #define G0_PIN 14
+#define RX_ENABLE 12
+#define TX_ENABLE 26
 
 // GPS
 #define GPS_SDA 22
@@ -101,6 +103,12 @@ void setup()
   Serial.begin(115200);
   delay(1000);
 
+  pinMode(RX_ENABLE, OUTPUT);
+  pinMode(TX_ENABLE, OUTPUT);
+
+  digitalWrite(TX_ENABLE, LOW);
+  digitalWrite(RX_ENABLE, HIGH);
+
   // move SPI initialization here to not overwrite the initialization of other sensors
   custom_spi_bus.begin(SD_SCK, SD_MISO, SD_MOSI, -1);
 
@@ -122,7 +130,7 @@ void setup()
 
   // GPS setup
   wire.begin(GPS_SDA, GPS_SCL);
-  //myGNSS.enableDebugging(); // Uncomment this line to enable helpful debug messages on Serial
+  // myGNSS.enableDebugging(); // Uncomment this line to enable helpful debug messages on Serial
 
   while (myGNSS.begin(wire, gnssAddress) == false) //Connect to the u-blox module using our custom port and address
   {
@@ -456,6 +464,9 @@ void writeSensorData(GpsData& gpsData, ICMData& icmData, BMPData& bmpData, unsig
 void writeToLora(GpsData& gpsData, ICMData& icmData, BMPData& bmpData, unsigned long timeSinceStart) {
     char loraEntry[CSV_ENTRY_MAX_LENGTH];
     // every string should start with an A and end with a Z
+    digitalWrite(TX_ENABLE, HIGH);
+    digitalWrite(RX_ENABLE, LOW);
+
     sprintf(loraEntry, 
       "A %3.8d,%3.8d,%5.8d,%5.8d," // gps data
       "%f,%f,%f," // accel
@@ -484,5 +495,9 @@ void writeToLora(GpsData& gpsData, ICMData& icmData, BMPData& bmpData, unsigned 
     LoRa.beginPacket();
     LoRa.print(loraEntry);
     LoRa.endPacket();
+
+    digitalWrite(TX_ENABLE, LOW);
+    digitalWrite(RX_ENABLE, HIGH);
+
     Serial.println("Finished Sending");
   }
