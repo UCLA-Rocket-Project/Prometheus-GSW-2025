@@ -1,8 +1,12 @@
+
+// Updated: 5.9.25 - WORKING
+
 #include <Adafruit_ADS1X15.h>
 #include <Wire.h>
 #include <SPI.h>
 #include <SD.h>
-#include <FS.h>
+#include <SPI.h>
+#include "FS.h"
 
 // SPI pins for SD card on HSPI
 #define SD_HSCK   14  // Replace with your HSCK pin
@@ -14,10 +18,11 @@ Adafruit_ADS1115 ads;  /* Use this for the 16-bit version */
 //Adafruit_ADS1015 ads;     /* Use this for the 12-bit version */
 
 String filename;
+unsigned long timestamp;
 
 String makeFile() {
   int index = 0;
-  String path;
+  String path = "/launch0.txt";
 
   // Look for the first filename that does NOT exist
   while (true) {
@@ -27,6 +32,7 @@ String makeFile() {
     }
     index++;
   }
+  Serial.printf("Created filename: %s\n", path);
   return path;
 }
 
@@ -84,7 +90,7 @@ void setup(void)
   while (!Serial) {
     ; // wait for serial port to connect. Needed for native USB port only
   }
-  
+
   // Configure the custom SPI pins
   Serial.println("Getting single-ended readings from AIN0..3");
   Serial.println("ADC Range: +/- 6.144V (1 bit = 3mV/ADS1015, 0.1875mV/ADS1115)");
@@ -104,11 +110,12 @@ void setup(void)
   // ads.setGain(GAIN_ONE);
 
   Wire.begin(32, 33); // default should be 21 and 22 for ESP32 (SDA, SCL)
+
   if (!ads.begin()) {
     Serial.println("Failed to initialize ADS.");
     while (1);
   }
-    
+
   Serial.print("Initializing SD card...");
 
   bool sd_init = false;
@@ -131,8 +138,10 @@ void setup(void)
   Serial.println("SD initialization done.");
 
   filename = makeFile();
-  
-  writeFile(SD, filename.c_str(), "PT1,PT2,PT3,V1,V2,V3\n");
+
+  writeFile(SD, filename.c_str(), "Timestamp,PT1,PT2,PT3,V1,V2,V3\n");
+
+  // readFile(SD, "/launch49.txt");
 
 }
 
@@ -140,6 +149,7 @@ void loop(void)
 {
   int16_t pt1, pt2, pt3; //pts
   float v1, v2, v3; //volts
+  timestamp = millis();
 
   pt1 = ads.readADC_SingleEnded(0); //reads A0
   pt2 = ads.readADC_SingleEnded(1); //reads A1
@@ -152,19 +162,16 @@ void loop(void)
 //  Serial.print("PT1: "); Serial.print(pt1); Serial.print(" = "); Serial.print(v1); Serial.println("V");
 //  Serial.print("PT2: "); Serial.print(pt2); Serial.print(" = "); Serial.print(v2); Serial.println("V");
 //  Serial.print("PT3: "); Serial.print(pt3); Serial.print(" = "); Serial.print(v3); Serial.println("V");
-  
+
   //Serial.print("Writing to test.txt...");
   //String message = "\n";
 //  message += "PT1: " + String(pt1) + " = " + String(v1) + "V\n";
 //  message += "PT2: " + String(pt2) + " = " + String(v2) + "V\n";
 //  message += "PT3: " + String(pt3) + " = " + String(v3) + "V\n";
-  String message = String(pt1) + "," + String(pt2) + "," + String(pt3) + "," + String(v1) + "," + String(v2) + "," + String(v3) + "\n";
+  String message = String(timestamp) + "," + String(pt1) + "," + String(pt2) + "," + String(pt3) + "," + String(v1) + "," + String(v2) + "," + String(v3) + "\n";
 
-  //Serial.print(message);
-  //Serial.print(message.c_str());
-  
-  appendFile(SD, filename.c_str(), message.c_str());
-  //readFile(SD, filename.c_str());
- 
-  delay(1000);
+  // Serial.print(message.c_str()); // Uncomment for calibration
+  appendFile(SD, filename.c_str(), message.c_str()); // Uncomment for functonality.
+
+  delay(15);
 }
