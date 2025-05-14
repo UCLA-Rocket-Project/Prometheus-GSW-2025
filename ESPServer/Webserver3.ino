@@ -8,8 +8,8 @@
 #include <WiFiUdp.h>
 
 // Replace with your network credentials
-const char* ssid = "GreenGuppy";
-const char* password = "lebron123";
+const char* ssid = "ILAY";
+const char* password = "lebronpookie123";
 
 #define FILE_NAME_MAX_LENGTH 100
 #define CSV_ENTRY_MAX_LENGTH 1024
@@ -26,10 +26,16 @@ File downloadFile;
 // #define SD_HMOSI  11  // Replace with your HMOSI pin
 // #define SD_CS_XTSD    6  // Replace with your CS_XTSD pin
 
-#define SD_HSCK 14
-#define SD_CS_XTSD 15
-#define SD_HMOSI 13
-#define SD_HMISO 12
+// #define SD_HSCK 14
+// #define SD_CS_XTSD 15
+// #define SD_HMOSI 13
+// #define SD_HMISO 12
+
+// SD card
+#define SD_CS_XTSD 4
+#define SD_HSCK 18
+#define SD_HMISO 13
+#define SD_HMOSI 23
 
 SPIClass spi;
 
@@ -239,9 +245,19 @@ void setup() {
         return;
       }
 
-      String filename = "/" + request->getParam("fileName")->value() + ".txt";
-      if (!SD.exists(filename)) {
-        request->send(404, "text/plain", "File not found");
+      String filename;
+      String filenameWithTxt = "/" + request->getParam("fileName")->value() + ".txt";
+      String filenameWithCSV = "/" + request->getParam("fileName")->value() + ".csv";
+
+      if (SD.exists(filenameWithTxt)) {
+        filename = filenameWithTxt;
+      }
+      else if (SD.exists(filenameWithCSV)) {
+        filename = filenameWithCSV;
+      }
+      else {
+        request->send(404, "text/plain", "Provided file not found");
+        return;
       }
 
       downloadFile = SD.open(filename, FILE_READ);
