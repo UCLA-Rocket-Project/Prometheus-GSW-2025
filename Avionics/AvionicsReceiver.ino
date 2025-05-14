@@ -1,77 +1,135 @@
 #include <SPI.h>
 #include <LoRa.h>
-
 #define SCK_PIN 32
 #define MISO_PIN 35
 #define MOSI_PIN 25
 #define CS_PIN 33
-#define RESET_PIN 14
-#define DIO0_PIN 27
+#define RESET_PIN 27
+#define DIO0_PIN 14
+#define TX_EN 26
+#define RX_EN 12
 
-#define STRING_MAX_LENGTH 1024
-#define RSSI_READING_LENGTH 31
+struct GpsData {
+  int32_t latitude;
+  int32_t longitude;
+  int32_t altitude; // gets height in mm above sea level
+  int32_t heading;
+};
+
+struct ICMData {
+  float accelX;
+  float accelY;
+  float accelZ;
+  
+  float gyroX;
+  float gyroY;
+  float gyroZ;
+  
+  float icmTemp;
+};
+
+
+struct BMPData {
+  double bmpTemp;
+  double pressure;
+  double altitude;
+};
 
 void setup() {
   Serial.begin(115200);
   while (!Serial);
-
   Serial.println("LoRa Receiver");
-
-   // Initialize SPI with custom pins (SCK, MISO, MOSI, CS)
+  pinMode(TX_EN, OUTPUT);
+  pinMode(RX_EN, OUTPUT);
+  digitalWrite(RX_EN, HIGH);
+  digitalWrite(TX_EN, LOW);
+  // Initialize SPI with custom pins (SCK, MISO, MOSI, CS)
   SPI.begin(SCK_PIN, MISO_PIN, MOSI_PIN, CS_PIN);
-
   // Tell LoRa library to use custom SPI
   LoRa.setSPI(SPI);
-
   // Set custom LoRa pins (CS, RESET, DIO0)
   LoRa.setPins(CS_PIN, RESET_PIN, DIO0_PIN);
   if (!LoRa.begin(915E6)) {
     Serial.println("Starting LoRa failed!");
     while (1);
   }
-
-  LoRa.setTxPower(23);
-
+  LoRa.setSpreadingFactor(7);
+  LoRa.setSignalBandwidth(125E3);
   Serial.println("LoRa started successfully");
 }
+
 void loop() {
   // try to parse packet
   int packetSize = LoRa.parsePacket();
+
+
   if (packetSize) {
+    // received a packet
+    Serial.print("Received packet '");
     // read packet
-    char receivedString[STRING_MAX_LENGTH + RSSI_READING_LENGTH + 1];
-    size_t receivedStringIndex = 0;
-
-    if (LoRa.available()) {
-      receivedString[receivedStringIndex++] = (char)LoRa.read();
+    while (LoRa.available()) {
+      char first = LoRa.read();
+      char second = LoRa.read();
       
-      // stop reading if the received string does not belong to us
-      if (!receivedString[0]) {
-        return;
+      if (first != 'A' || second != ' ') {
+        continue;
       }
 
-      while (LoRa.available() && receivedStringIndex < STRING_MAX_LENGTH) {
-        // if the first character is not an 'A', the string does not belong to us
-        receivedString[receivedStringIndex++] = (char)LoRa.read();
+      struct GpsData gpsData = {};
+      struct ICMData icmData = {};
+      struct BMPData bmpData = {};
+      unsigned long timeSinceStart;
+
+      // read gps values
+      uint8_t gpsDataBuffer[sizeof(GpsData)];
+      LoRa.readBytes(gpsDataBuffer, sizeof(GpsData));
+      memcpy(&gpsData, gpsDataBuffer, sizeof(GpsData));
+
+      uint8_t icmDataBuffer[sizeof(ICMData)];
+      LoRa.readBytes(icmDataBuffer, sizeof(ICMData));
+      memcpy(&icmData, icmDataBuffer, sizeof(ICMData));
+
+      uint8_t bmpDataBuffer[sizeof(BMPData)];
+      LoRa.readBytes(bmpDataBuffer, sizeof(BMPData));
+      memcpy(&bmpData, bmpDataBuffer, sizeof(BMPData));
+
+      uint8_t timestampBuffer[sizeof(unsigned long)];
+      LoRa.readBytes(timestampBuffer, sizeof(unsigned long));
+      memcpy(&timeSinceStart, timestampBuffer, sizeof(unsigned long));
+
+      char endOne = LoRa.read();
+      char last = LoRa.read();
+
+      if (endOne != ' ' || last != 'Z') {
+        Serial.println("Invalid String Received");
+        break;
       }
 
-      // check that the last 2 characters are Z\n, and add
-      if (
-        receivedStringIndex > 2 && 
-        (receivedString[receivedStringIndex - 2] != 'Z' || receivedString[receivedStringIndex - 1] != '\n')
-      ) {
-        return;
-      }
-
-      // append the RSSI strength reading
-      // replace the ' ' in ' Z\n' to append to the string
-
-      receivedString[receivedStringIndex - 3] = '\0';
-      char rssi_reading[RSSI_READING_LENGTH];
-      sprintf(rssi_reading, ",%d Z\n", LoRa.packetRssi());
-
-      strcat(receivedString, rssi_reading);
-      Serial.print(receivedString);
+      char loraReceiveValue[1024];
+      sprintf(loraReceiveValue, 
+      "%3.5d,%3.5d,%5.8d,%3.5d," // gps data
+      "%f,%f,%f," // accel
+      "%f,%f,%f," // gyro
+      "%f,%f,"
+      "%lu\n", // bmp
+      gpsData.latitude,
+      gpsData.longitude,
+      gpsData.altitude,
+      gpsData.heading,
+      icmData.accelX,
+      icmData.accelY,
+      icmData.accelZ,
+      icmData.gyroX,
+      icmData.gyroY,
+      icmData.gyroZ,
+      bmpData.pressure,
+      bmpData.altitude,
+      timeSinceStart
+      );   
+    Serial.println(loraReceiveValue);   
     }
+    // print RSSI of packet
+    Serial.print("' with RSSI ");
+    Serial.println(LoRa.packetRssi());
   }
 }
