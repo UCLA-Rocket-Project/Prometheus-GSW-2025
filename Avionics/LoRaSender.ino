@@ -1,3 +1,5 @@
+#define IS_DEBUG
+
 #include <Arduino.h>
 #include <Wire.h> //Needed for I2C to GNSS
  
@@ -270,7 +272,7 @@ void loop()
  
   unsigned long timeSinceStart = millis();
  
-  //writeSensorData(gpsData, icmData, bmpData, timeSinceStart);
+  writeSensorData(gpsData, icmData, bmpData, timeSinceStart);
   writeToLora(gpsData, icmData, bmpData, timeSinceStart);
 //  delay(50);
  
@@ -284,6 +286,7 @@ void getGPSData(GpsData& gpsData) {
     gpsData.altitude = myGNSS.getAltitudeMSL(); // Altitude above Mean Sea Level
     gpsData.heading = myGNSS.getHeading();
  
+    #ifdef IS_DEBUG
     Serial.print(F("Lat: "));
     Serial.print(gpsData.latitude);
     Serial.print(F(" Long: "));
@@ -296,6 +299,7 @@ void getGPSData(GpsData& gpsData) {
     Serial.print(gpsData.heading);
     Serial.print(F(" (degrees * 10^-5)"));
     Serial.println();
+    #endif
   }
 }
  
@@ -307,14 +311,21 @@ void getICMData(ICMData& icmData) {
   icm.getEvent(&accel, &gyro, &temp, &mag);
  
   icmData.icmTemp = temp.temperature;
-  Serial.print("\t\tTemperature *C");
-  Serial.print(temp.temperature);
-  Serial.println();
- 
+  
   /* Display the results (acceleration is measured in m/s^2) */
   icmData.accelX = accel.acceleration.x;
   icmData.accelY = accel.acceleration.y;
   icmData.accelZ = accel.acceleration.z;
+ 
+  /* Display the results (acceleration is measured in m/s^2) */
+  icmData.gyroX = gyro.gyro.x;
+  icmData.gyroY = gyro.gyro.y;
+  icmData.gyroZ = gyro.gyro.z;
+
+  #ifdef IS_DEBUG
+  Serial.print("\t\tTemperature *C");
+  Serial.print(temp.temperature);
+  Serial.println();
   Serial.print("\t\tAccel X: ");
   Serial.print(accel.acceleration.x);
   Serial.print(" \tY: ");
@@ -322,24 +333,6 @@ void getICMData(ICMData& icmData) {
   Serial.print(" \tZ: ");
   Serial.print(accel.acceleration.z);
   Serial.println(" m/s^2 ");
- 
- 
-  // icmData.magX = mag.magnetic.x;
-  // icmData.magY = mag.magnetic.y;
-  // icmData.magZ = mag.magnetic.z;
-  Serial.print("\t\tMag X: ");
-  Serial.print(mag.magnetic.x);
-  Serial.print(" \tY: ");
-  Serial.print(mag.magnetic.y);
-  Serial.print(" \tZ: ");
-  Serial.print(mag.magnetic.z);
-  Serial.println(" uT");
- 
- 
-  /* Display the results (acceleration is measured in m/s^2) */
-  icmData.gyroX = gyro.gyro.x;
-  icmData.gyroY = gyro.gyro.y;
-  icmData.gyroZ = gyro.gyro.z;
   Serial.print("\t\tGyro X: ");
   Serial.print(gyro.gyro.x);
   Serial.print(" \tY: ");
@@ -348,7 +341,7 @@ void getICMData(ICMData& icmData) {
   Serial.print(gyro.gyro.z);
   Serial.println(" radians/s ");
   Serial.println();
- 
+  #endif
 }
  
 void getBMPData(BMPData& bmpData) {
@@ -357,6 +350,7 @@ void getBMPData(BMPData& bmpData) {
     bmpData.pressure = bmp.pressure / 100.0;
     bmpData.altitude = bmp.readAltitude(SEALEVELPRESSURE_HPA);
  
+    #ifdef IS_DEBUG
     Serial.print("Temperature = ");
     Serial.print(bmpData.bmpTemp);
     Serial.println(" *C");
@@ -370,6 +364,7 @@ void getBMPData(BMPData& bmpData) {
     Serial.println(" m");
  
     Serial.println();
+    #endif
   }
 }
  
@@ -450,9 +445,11 @@ void writeSensorData(GpsData& gpsData, ICMData& icmData, BMPData& bmpData, unsig
   );
  
   appendFile(SD, newFileName, csvEntry);
- 
+
+  #ifdef IS_DEBUG
   Serial.print("\n\nWrote:");
   Serial.println(csvEntry);
+  #endif
 }
  
 void writeToLora(GpsData& gpsData, ICMData& icmData, BMPData& bmpData, unsigned long timeSinceStart) {
@@ -460,27 +457,6 @@ void writeToLora(GpsData& gpsData, ICMData& icmData, BMPData& bmpData, unsigned 
     // every string should start with an A and end with a Z
     digitalWrite(TX_ENABLE, HIGH);
     digitalWrite(RX_ENABLE, LOW);
- 
-    sprintf(loraEntry, 
-      "A %3.8d,%3.8d,%5.8d,%5.8d," // gps data
-      "%f,%f,%f," // accel
-      "%f,%f,%f," // gyro
-      "%f,%f,"
-      "%lu Z\n", // bmp
-      gpsData.latitude,
-      gpsData.longitude,
-      gpsData.altitude,
-      gpsData.heading,
-      icmData.accelX,
-      icmData.accelY,
-      icmData.accelZ,
-      icmData.gyroX,
-      icmData.gyroY,
-      icmData.gyroZ,
-      bmpData.pressure,
-      bmpData.altitude,
-      timeSinceStart
-    );
  
     uint8_t gpsDataByteArray[sizeof(GpsData)];
     memcpy(gpsDataByteArray, &gpsData, sizeof(GpsData));
@@ -506,8 +482,9 @@ void writeToLora(GpsData& gpsData, ICMData& icmData, BMPData& bmpData, unsigned 
  
     digitalWrite(TX_ENABLE, LOW);
     digitalWrite(RX_ENABLE, HIGH);
- 
+
+    #ifdef IS_DEBUG
     Serial.println(loraEntry);
- 
     Serial.println("Finished Sending");
+    #endif
   }
