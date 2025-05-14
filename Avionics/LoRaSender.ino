@@ -87,8 +87,12 @@ struct BMPData {
 #define SD_MOSI 23
  
 #define FILE_NAME_MAX_LENGTH 100
-#define CSV_ENTRY_MAX_LENGTH 1024
- 
+#define CSV_ENTRY_MAX_LENGTH 256
+#define CSV_BUFFER_MAX_LENGTH 2560
+
+char csvDataBuffer[CSV_BUFFER_MAX_LENGTH] = {0};
+int bufferStoreCounter = 0;
+
 SPIClass custom_spi_bus;
 // char *newFileName = "/datahehe.csv";
 char newFileName[FILE_NAME_MAX_LENGTH];
@@ -122,9 +126,8 @@ void setup()
     "gps_latitude,gps_logitude,gps_altitude,gps_heading,"
     "icm_accel_x,icm_accel_y,icm_accel_z,"
     "icm_gyro_x,icm_gyro_y,icm_gyro_z,"
-    "icm_mag_x,icm_mag_y,icm_mag_z,"
     "icm_temp,"
-    "bmp_temperature,bmp_pressure,bmp_altitude\n");
+    "bmp_temperature,bmp_pressure,bmp_altitude,timestamp\n");
  
   // GPS setup
   wire.begin(GPS_SDA, GPS_SCL);
@@ -370,7 +373,7 @@ void getBMPData(BMPData& bmpData) {
  
 // continuously increment file name with counter until you find a new file
 bool getNewFilename(char* new_file_name) {
-  int counter = 0;
+  int counter = 5;
   char candidate_file_name[FILE_NAME_MAX_LENGTH + 1];
   while (true) {
     sprintf(candidate_file_name, "/data%d.csv", counter);
@@ -421,7 +424,7 @@ void appendFile(fs::FS &fs, const char *path, const char *message) {
 void writeSensorData(GpsData& gpsData, ICMData& icmData, BMPData& bmpData, unsigned long timeSinceStart) {
   char csvEntry[CSV_ENTRY_MAX_LENGTH];
   sprintf(csvEntry, 
-    "%3.8d,%3.8d,%5.8d,%5.8d," // gps data
+    "%3.5d,%3.5d,%5.8d,%3.5d," // gps data
     "%f,%f,%f," // accel
     "%f,%f,%f," // gyro
     "%f," // icm temp
@@ -444,12 +447,22 @@ void writeSensorData(GpsData& gpsData, ICMData& icmData, BMPData& bmpData, unsig
     timeSinceStart
   );
  
-  appendFile(SD, newFileName, csvEntry);
+  // write entries to buffer and flush when buffer is full
+  strcat(csvDataBuffer, csvEntry);
+  ++bufferStoreCounter;
 
-  #ifdef IS_DEBUG
-  Serial.print("\n\nWrote:");
-  Serial.println(csvEntry);
-  #endif
+  // flush the buffer every 10 writes
+  if (bufferStoreCounter == 10) {
+    appendFile(SD, newFileName, csvDataBuffer);
+    bufferStoreCounter = 0;
+
+    #ifdef IS_DEBUG
+    Serial.print("\n\nWrote multiple entries:\n");
+    Serial.println(csvDataBuffer);
+    #endif
+
+    memset(csvDataBuffer, 0, CSV_BUFFER_MAX_LENGTH);
+  }
 }
  
 void writeToLora(GpsData& gpsData, ICMData& icmData, BMPData& bmpData, unsigned long timeSinceStart) {
