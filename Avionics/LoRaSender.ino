@@ -91,7 +91,11 @@ struct BMPData {
 #define SD_MOSI 23
  
 #define FILE_NAME_MAX_LENGTH 100
-#define CSV_ENTRY_MAX_LENGTH 1024
+#define CSV_ENTRY_MAX_LENGTH 256
+#define CSV_BUFFER_MAX_LENGTH 2560
+
+char csvDataBuffer[CSV_BUFFER_MAX_LENGTH] = {0};
+int bufferStoreCounter = 0;
  
 SPIClass custom_spi_bus;
 // char *newFileName = "/datahehe.csv";
@@ -126,9 +130,10 @@ void setup()
     "gps_latitude,gps_logitude,gps_altitude,gps_heading,"
     "icm_accel_x,icm_accel_y,icm_accel_z,"
     "icm_gyro_x,icm_gyro_y,icm_gyro_z,"
-    "icm_mag_x,icm_mag_y,icm_mag_z,"
     "icm_temp,"
-    "bmp_temperature,bmp_pressure,bmp_altitude\n");
+    "bmp_temperature,bmp_pressure,bmp_altitude"
+    "timestamp\n"
+  );
  
   // GPS setup
   wire.begin(GPS_SDA, GPS_SCL);
@@ -204,7 +209,7 @@ void setup()
   Serial.print("Gyro data rate (Hz) is approximately: ");
   Serial.println(gyro_rate);
  
-  icm.setMagDataRate(AK09916_MAG_DATARATE_20_HZ);
+  icm.setMagDataRate(AK09916_MAG_DATARATE_SHUTDOWN);
   Serial.print("Magnetometer data rate set to: ");
   switch (icm.getMagDataRate()) {
   case AK09916_MAG_DATARATE_SHUTDOWN:
@@ -279,22 +284,21 @@ void loop()
 
   // Use the latest available GPS data (even if it's slightly outdated)
   unsigned long timeSinceStart = millis();
+  writeSensorData(gpsData, icmData, bmpData, timeSinceStart);
   writeToLora(currentGpsData, icmData, bmpData, timeSinceStart);
-  //  delay(50);
-
 }
 
 void getGpsTask(void *parameter) {
-    for (;;) {
-        GpsData gpsData;
-        getGPSData(gpsData); // Assuming this is the blocking function
+  for (;;) {
+      GpsData gpsData;
+      getGPSData(gpsData); // Assuming this is the blocking function
 
-        // Send the new GPS data to the queue
-        xQueueSend(gpsQueue, &gpsData, 0);
+      // Send the new GPS data to the queue
+      xQueueSend(gpsQueue, &gpsData, 0);
 
-        // Add a short delay to prevent starving the core
-        vTaskDelay(10 / portTICK_PERIOD_MS);
-    }
+      // Add a short delay to prevent starving the core
+      vTaskDelay(10 / portTICK_PERIOD_MS);
+  }
 }
  
 void getGPSData(GpsData& gpsData) {
@@ -305,6 +309,7 @@ void getGPSData(GpsData& gpsData) {
     gpsData.altitude = myGNSS.getAltitudeMSL(); // Altitude above Mean Sea Level
     gpsData.heading = myGNSS.getHeading();
  
+    #ifdef IS_DEBUG
     Serial.print(F("Lat: "));
     Serial.print(gpsData.latitude);
     Serial.print(F(" Long: "));
@@ -317,6 +322,7 @@ void getGPSData(GpsData& gpsData) {
     Serial.print(gpsData.heading);
     Serial.print(F(" (degrees * 10^-5)"));
     Serial.println();
+    #endif
   }
 }
  
@@ -328,14 +334,21 @@ void getICMData(ICMData& icmData) {
   icm.getEvent(&accel, &gyro, &temp, &mag);
  
   icmData.icmTemp = temp.temperature;
-  Serial.print("\t\tTemperature *C");
-  Serial.print(temp.temperature);
-  Serial.println();
- 
+  
   /* Display the results (acceleration is measured in m/s^2) */
   icmData.accelX = accel.acceleration.x;
   icmData.accelY = accel.acceleration.y;
   icmData.accelZ = accel.acceleration.z;
+ 
+  /* Display the results (acceleration is measured in m/s^2) */
+  icmData.gyroX = gyro.gyro.x;
+  icmData.gyroY = gyro.gyro.y;
+  icmData.gyroZ = gyro.gyro.z;
+
+  #ifdef IS_DEBUG
+  Serial.print("\t\tTemperature *C");
+  Serial.print(temp.temperature);
+  Serial.println();
   Serial.print("\t\tAccel X: ");
   Serial.print(accel.acceleration.x);
   Serial.print(" \tY: ");
@@ -343,24 +356,6 @@ void getICMData(ICMData& icmData) {
   Serial.print(" \tZ: ");
   Serial.print(accel.acceleration.z);
   Serial.println(" m/s^2 ");
- 
- 
-  // icmData.magX = mag.magnetic.x;
-  // icmData.magY = mag.magnetic.y;
-  // icmData.magZ = mag.magnetic.z;
-  Serial.print("\t\tMag X: ");
-  Serial.print(mag.magnetic.x);
-  Serial.print(" \tY: ");
-  Serial.print(mag.magnetic.y);
-  Serial.print(" \tZ: ");
-  Serial.print(mag.magnetic.z);
-  Serial.println(" uT");
- 
- 
-  /* Display the results (acceleration is measured in m/s^2) */
-  icmData.gyroX = gyro.gyro.x;
-  icmData.gyroY = gyro.gyro.y;
-  icmData.gyroZ = gyro.gyro.z;
   Serial.print("\t\tGyro X: ");
   Serial.print(gyro.gyro.x);
   Serial.print(" \tY: ");
@@ -369,7 +364,7 @@ void getICMData(ICMData& icmData) {
   Serial.print(gyro.gyro.z);
   Serial.println(" radians/s ");
   Serial.println();
- 
+  #endif
 }
  
 void getBMPData(BMPData& bmpData) {
@@ -378,6 +373,7 @@ void getBMPData(BMPData& bmpData) {
     bmpData.pressure = bmp.pressure / 100.0;
     bmpData.altitude = bmp.readAltitude(SEALEVELPRESSURE_HPA);
  
+    #ifdef IS_DEBUG
     Serial.print("Temperature = ");
     Serial.print(bmpData.bmpTemp);
     Serial.println(" *C");
@@ -391,12 +387,13 @@ void getBMPData(BMPData& bmpData) {
     Serial.println(" m");
  
     Serial.println();
+    #endif
   }
 }
  
 // continuously increment file name with counter until you find a new file
 bool getNewFilename(char* new_file_name) {
-  int counter = 0;
+  int counter = 10;
   char candidate_file_name[FILE_NAME_MAX_LENGTH + 1];
   while (true) {
     sprintf(candidate_file_name, "/data%d.csv", counter);
@@ -470,38 +467,26 @@ void writeSensorData(GpsData& gpsData, ICMData& icmData, BMPData& bmpData, unsig
     timeSinceStart
   );
  
-  appendFile(SD, newFileName, csvEntry);
- 
-  Serial.print("\n\nWrote:");
-  Serial.println(csvEntry);
+  // write entries to buffer and flush when buffer is full
+  strcat(csvDataBuffer, csvEntry);
+  ++bufferStoreCounter;
+
+  // flush the buffer every 10 writes
+  if (bufferStoreCounter == 10) {
+    appendFile(SD, newFileName, csvDataBuffer);
+    bufferStoreCounter = 0;
+
+    #ifdef IS_DEBUG
+    Serial.print("\n\nWrote multiple entries:\n");
+    Serial.println(csvDataBuffer);
+    #endif
+
+    memset(csvDataBuffer, 0, CSV_BUFFER_MAX_LENGTH);
+  }
 }
  
 void writeToLora(GpsData& gpsData, ICMData& icmData, BMPData& bmpData, unsigned long timeSinceStart) {
     char loraEntry[CSV_ENTRY_MAX_LENGTH];
-    // every string should start with an A and end with a Z
-    digitalWrite(TX_ENABLE, HIGH);
-    digitalWrite(RX_ENABLE, LOW);
- 
-    sprintf(loraEntry, 
-      "A %3.8d,%3.8d,%5.8d,%5.8d," // gps data
-      "%f,%f,%f," // accel
-      "%f,%f,%f," // gyro
-      "%f,%f,"
-      "%lu Z\n", // bmp
-      gpsData.latitude,
-      gpsData.longitude,
-      gpsData.altitude,
-      gpsData.heading,
-      icmData.accelX,
-      icmData.accelY,
-      icmData.accelZ,
-      icmData.gyroX,
-      icmData.gyroY,
-      icmData.gyroZ,
-      bmpData.pressure,
-      bmpData.altitude,
-      timeSinceStart
-    );
  
     uint8_t gpsDataByteArray[sizeof(GpsData)];
     memcpy(gpsDataByteArray, &gpsData, sizeof(GpsData));
@@ -516,6 +501,9 @@ void writeToLora(GpsData& gpsData, ICMData& icmData, BMPData& bmpData, unsigned 
     memcpy(timestampArray, &timeSinceStart, sizeof(unsigned long));
  
     Serial.println("Sending packet: ");
+    // every string should start with an A and end with a Z
+    digitalWrite(TX_ENABLE, HIGH);
+    digitalWrite(RX_ENABLE, LOW);
     LoRa.beginPacket();
     LoRa.print("A ");
     LoRa.write(gpsDataByteArray, sizeof(GpsData));
@@ -527,8 +515,9 @@ void writeToLora(GpsData& gpsData, ICMData& icmData, BMPData& bmpData, unsigned 
  
     digitalWrite(TX_ENABLE, LOW);
     digitalWrite(RX_ENABLE, HIGH);
- 
+
+    #ifdef IS_DEBUG
     Serial.println(loraEntry);
- 
     Serial.println("Finished Sending");
+    #endif
   }
