@@ -261,7 +261,7 @@ void setup()
   // set output power to as high as possible
   LoRa.setTxPower(20);
   LoRa.setSpreadingFactor(7);
-  LoRa.setSignalBandwidth(125E3);
+  LoRa.setSignalBandwidth(250E3);
  
   Serial.println("LoRa started successfully, power set to 23");
   gpsQueue = xQueueCreate(5, sizeof(GpsData)); // Up to 5 GPS data samples
